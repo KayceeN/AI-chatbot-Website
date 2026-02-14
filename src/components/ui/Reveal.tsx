@@ -6,17 +6,15 @@ import type { SectionMotionConfig } from "@/lib/motion";
 import { getPreset, getTransition } from "@/lib/motion";
 
 interface RevealProps extends PropsWithChildren {
-  as?: "div" | "section";
   className?: string;
   config?: SectionMotionConfig;
 }
 
-export const Reveal = ({ as = "div", className = "", config, children }: RevealProps) => {
+export const Reveal = ({ className = "", config, children }: RevealProps) => {
   const variants = getPreset(config?.preset ?? "fadeUp");
 
   return (
     <motion.div
-      as={as}
       className={className}
       initial="hidden"
       whileInView="visible"

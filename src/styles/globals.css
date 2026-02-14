@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --canvas: #ececed;
+  --panel: #f4f4f5;
+  --ink: #121316;
+  --muted: #565a60;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-manrope), sans-serif;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 14% 12%, rgba(255, 255, 255, 0.82) 0%, transparent 34%),
+    radial-gradient(circle at 88% 82%, rgba(255, 255, 255, 0.8) 0%, transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(236, 236, 237, 1));
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.orb-rings {
+  pointer-events: none;
+  position: absolute;
+  inset: 12% auto auto 50%;
+  width: min(78vw, 62rem);
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+}
+
+.orb-rings::before,
+.orb-rings::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  box-shadow:
+    0 25px 40px rgba(15, 15, 16, 0.08),
+    inset 0 0 24px rgba(255, 255, 255, 0.82);
+}
+
+.orb-rings::after {
+  inset: 14% 14%;
+  opacity: 0.65;
+}
+
+.field {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.8rem 0.95rem;
+  font: inherit;
+  color: var(--ink);
+  outline: none;
+  box-shadow: inset 0 1px 4px rgba(12, 12, 13, 0.06);
+}
+
+.field:focus {
+  border-color: rgba(15, 15, 16, 0.38);
+  box-shadow: 0 0 0 3px rgba(28, 28, 30, 0.08);
+}

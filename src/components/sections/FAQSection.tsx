@@ -25,11 +25,17 @@ export const FAQSection = ({ content }: FAQSectionProps) => {
                 type="button"
                 className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-lg font-semibold text-ink"
                 onClick={() => setOpenIndex(open ? -1 : index)}
+                aria-expanded={open}
+                aria-controls={`faq-panel-${index}`}
               >
                 <span>{item.question}</span>
                 <span className="text-muted">{open ? "−" : "+"}</span>
               </button>
-              {open ? <p className="px-5 pb-5 text-base text-muted">{item.answer}</p> : null}
+              {open ? (
+                <p id={`faq-panel-${index}`} className="px-5 pb-5 text-base text-muted">
+                  {item.answer}
+                </p>
+              ) : null}
             </article>
           );
         })}

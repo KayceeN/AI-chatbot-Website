@@ -28,7 +28,7 @@ export const ContactSection = ({ content }: ContactSectionProps) => {
         </div>
 
         <GlassCard>
-          <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
+          <form className="grid gap-4">
             <label className="grid gap-2 text-sm font-semibold text-ink">
               {content.form.fullName}
               <input className="field" placeholder={content.form.placeholders.fullName} />
