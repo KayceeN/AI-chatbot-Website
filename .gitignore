@@ -1,37 +1,22 @@
-# dependencies
-node_modules/
-.pnp
-.pnp.js
-
-# testing
-coverage/
-
-# next.js
-.next/
-out/
-
-# production
-build/
-
-# misc
+node_modules
+.next
+coverage
+playwright-report
+test-results
 .DS_Store
-*.pem
+*.log
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
+# env files (SECURITY.md requirement)
 .env
 .env*.local
+
+# build
+out
+build
+*.tsbuildinfo
 
 # vercel
 .vercel
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# supabase
-supabase/.temp/
+# reference assets (large binaries)
+reference/
