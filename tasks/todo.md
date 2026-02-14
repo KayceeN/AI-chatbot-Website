@@ -1,6 +1,6 @@
 # TODO
 
-## Phase 0: Audit & Documentation (Current)
+## Phase 0: Audit & Documentation (Complete)
 - [x] Audit Codex build against reference frames
 - [x] Write visual audit report (`docs/plans/2026-02-14-visual-audit.md`)
 - [x] Create DESIGN.md (current-state + target-state visual system)
@@ -95,3 +95,7 @@ Any additional dependencies require explicit user approval per SECURITY.md.
   - Two entire sections missing (Comparison, Team).
   - All image areas use gradient placeholders.
   - Several icon/styling gaps documented in visual audit.
+
+## Phase 0 Review
+- All 5 documents written, committed, PR #1 merged to main.
+- Next session: begin Phase A (Fix Visual Gaps).
