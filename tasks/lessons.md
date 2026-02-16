@@ -13,3 +13,16 @@ Codex added framer-motion, vitest, playwright, etc. Per SECURITY.md, new depende
 
 ### Present tradeoffs for technical decisions
 User prefers seeing pros/cons (e.g., Supabase vs NextAuth) before choosing. For significant technical choices, always present a brief comparison with a recommendation rather than just listing options.
+
+## 2026-02-16: Visual Parity Follow-up
+
+### Remove third-party dock elements when asked to clone style, not embed source artifacts
+The floating `Get Orb AI / Made in Framer` dock is a source-site artifact and should be removed immediately when requested, not just restyled.
+
+### Treat "plain white background" as a global token change, not a section-only tweak
+If the user asks to remove gray framing, update shared background tokens (`canvas`, body background layers, hero media shell) so the entire page resolves to white consistently.
+
+## 2026-02-16: Hero Video Color-Match Debugging
+
+### Fix off-white/blue background drift in the media itself, not only in CSS
+When users report frame color shifts during motion, prioritize a frame-level video processing pass (background normalization) and then reduce overlays; CSS-only whitening is not enough for moving-frame artifacts.

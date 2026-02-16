@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Check, DollarSign } from "lucide-react";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -15,32 +17,41 @@ type BillingMode = "monthly" | "yearly";
 
 export const PricingSection = ({ content }: PricingSectionProps) => {
   const [mode, setMode] = useState<BillingMode>("monthly");
-  const buttons = useMemo(
-    () => [
-      { key: "monthly", label: "Monthly" },
-      { key: "yearly", label: "Yearly" }
-    ],
-    []
-  );
 
   return (
     <SectionShell id="pricing">
-      <SectionHeading badge={content.badge} title={content.title} subtitle={content.subtitle} />
+      <SectionHeading
+        badge={content.badge}
+        title={content.title}
+        subtitle={content.subtitle}
+        icon={<DollarSign className="h-3.5 w-3.5" />}
+      />
 
       <div className="mx-auto mb-8 flex w-fit items-center gap-2 rounded-full border border-white/80 bg-panel p-1 shadow-plate">
-        {buttons.map((button) => (
+        {(["monthly", "yearly"] as const).map((billing) => (
           <button
-            key={button.key}
+            key={billing}
             type="button"
-            onClick={() => setMode(button.key as BillingMode)}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-              mode === button.key ? "bg-white text-ink shadow-plate" : "text-muted"
+            onClick={() => setMode(billing)}
+            className={`relative flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+              mode === billing ? "text-ink" : "text-muted"
             }`}
           >
-            {button.label}
+            {mode === billing && (
+              <motion.div
+                layoutId="pricing-toggle"
+                className="absolute inset-0 rounded-full bg-white shadow-plate"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+            <span className="relative z-10">{billing === "monthly" ? "Monthly" : "Yearly"}</span>
+            {billing === "yearly" && (
+              <span className={`relative z-10 rounded-full px-2 py-0.5 text-xs font-bold transition-colors ${
+                mode === "yearly" ? "bg-ink text-white" : "bg-white text-ink shadow-plate"
+              }`}>30% off</span>
+            )}
           </button>
         ))}
-        <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-ink shadow-plate">30% off</span>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
@@ -63,8 +74,9 @@ export const PricingSection = ({ content }: PricingSectionProps) => {
 
             <ul className="space-y-2">
               {plan.features.map((feature) => (
-                <li key={feature} className="text-base text-muted">
-                  ✓ {feature}
+                <li key={feature} className="flex items-center gap-2 text-base text-muted">
+                  <Check className="h-4 w-4 flex-shrink-0 text-ink" />
+                  {feature}
                 </li>
               ))}
             </ul>

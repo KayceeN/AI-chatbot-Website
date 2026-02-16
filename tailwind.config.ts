@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        canvas: "#ececed",
+        canvas: "#ffffff",
         ink: "#151517",
         muted: "#5c5f66",
         panel: "#f4f4f5"

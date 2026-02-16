@@ -7,6 +7,8 @@ export type SectionId =
   | "projects"
   | "customers"
   | "pricing"
+  | "comparison"
+  | "team"
   | "contact"
   | "faq"
   | "footer";
@@ -22,10 +24,20 @@ export interface CTA {
   variant: "primary" | "secondary";
 }
 
+export interface HeroMediaConfig {
+  posterSrc: string;
+  webmSrc: string;
+  mp4Src: string;
+  aspectRatio: string;
+  idleDelayMs: number;
+  observerRootMargin: string;
+  observerThreshold: number;
+  fadeMs: number;
+}
+
 export interface LandingPageContent {
   brand: string;
   nav: LandingNavItem[];
-  floatingActions: { getOrb: string; madeIn: string };
   hero: {
     badge: string;
     title: string;
@@ -33,6 +45,7 @@ export interface LandingPageContent {
     ctas: [CTA, CTA];
     quote: string;
     quoteAuthor: string;
+    media: HeroMediaConfig;
   };
   benefits: {
     badge: string;
@@ -94,6 +107,19 @@ export interface LandingPageContent {
     }>;
     donationLine: string;
   };
+  comparison: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    us: { label: string; features: string[] };
+    others: { label: string; features: string[] };
+  };
+  team: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    members: Array<{ name: string; role: string }>;
+  };
   contact: {
     badge: string;
     title: string;
@@ -137,13 +163,15 @@ export const sectionOrder: SectionId[] = [
   "projects",
   "customers",
   "pricing",
+  "comparison",
+  "team",
   "contact",
   "faq",
   "footer"
 ];
 
 export const landingContent: LandingPageContent = {
-  brand: "OrbAI",
+  brand: "kAyphI",
   nav: [
     { label: "Features", href: "#features" },
     { label: "Pricing", href: "#pricing" },
@@ -151,13 +179,9 @@ export const landingContent: LandingPageContent = {
     { label: "Updates", href: "#customers" },
     { label: "Contact", href: "#contact" }
   ],
-  floatingActions: {
-    getOrb: "Get Orb AI",
-    madeIn: "Made in Framer"
-  },
   hero: {
     badge: "AI AUTOMATION FOR BUSINESSES",
-    title: "ORB AI",
+    title: "kAyphI",
     subtitle: "Custom AI solutions, built for the innovators of tomorrow",
     ctas: [
       { label: "Get Template", href: "#pricing", variant: "primary" },
@@ -165,7 +189,17 @@ export const landingContent: LandingPageContent = {
     ],
     quote:
       "We harness your data, understand your audience, and use AI to help your brand rise above the noise. The best part? We execute, too.",
-    quoteAuthor: "Founder of ORB AI"
+    quoteAuthor: "Founder of kAyphI",
+    media: {
+      posterSrc: "/videos/hero/hero-clean-poster.webp",
+      webmSrc: "/videos/hero/hero-clean.webm",
+      mp4Src: "/videos/hero/hero-clean.mp4",
+      aspectRatio: "16 / 9",
+      idleDelayMs: 1200,
+      observerRootMargin: "200px 0px",
+      observerThreshold: 0.2,
+      fadeMs: 520
+    }
   },
   benefits: {
     badge: "BENEFITS",
@@ -384,6 +418,44 @@ export const landingContent: LandingPageContent = {
     ],
     donationLine: "We donate 2% of your membership to pediatric wellbeing"
   },
+  comparison: {
+    badge: "COMPARISON",
+    title: "Precision vs Basic",
+    subtitle: "See how our AI outperforms competitors with speed.",
+    us: {
+      label: "kAyphI",
+      features: [
+        "Automated workflows",
+        "Personalized AI-driven strategies",
+        "Data-backed real-time insights",
+        "Scalable AI systems",
+        "Trained chatbots",
+        "Rapid AI-generated content",
+        "Real time data analysis"
+      ]
+    },
+    others: {
+      label: "Others",
+      features: [
+        "Manual workflows",
+        "Generic one-size-fits-all solutions",
+        "Decision-making based on guesswork",
+        "Lacks scalability",
+        "Standard chatbots",
+        "Time-consuming content creation"
+      ]
+    }
+  },
+  team: {
+    badge: "TEAM",
+    title: "Team Behind Success",
+    subtitle: "Meet the experts behind our AI — driven to deliver smart solutions.",
+    members: [
+      { name: "Gwen Chase", role: "Marketing" },
+      { name: "James Bond", role: "Designer" },
+      { name: "Emily Gwen", role: "Support Team" }
+    ]
+  },
   contact: {
     badge: "CONTACT",
     title: "Reach Us At Anytime",
@@ -392,8 +464,8 @@ export const landingContent: LandingPageContent = {
       {
         title: "Email",
         body: "Feel free to email me if you have any questions or need more details!",
-        linkLabel: "orbai@support.com",
-        linkHref: "mailto:orbai@support.com"
+        linkLabel: "kayphi@support.com",
+        linkHref: "mailto:kayphi@support.com"
       },
       {
         title: "Call",
@@ -410,7 +482,7 @@ export const landingContent: LandingPageContent = {
       submit: "Send Your Message",
       placeholders: {
         fullName: "Ikta Sollork",
-        email: "orbai@support.com",
+        email: "kayphi@support.com",
         subject: "Regarding Project",
         message: "Give us more info.."
       }
@@ -444,7 +516,7 @@ export const landingContent: LandingPageContent = {
       }
     ],
     emailLine: "Feel free to mail us for any enquiries:",
-    email: "orbai@support.com"
+    email: "kayphi@support.com"
   },
   footer: {
     headline: "Next-gen AI systems, built for tomorrow's innovators",

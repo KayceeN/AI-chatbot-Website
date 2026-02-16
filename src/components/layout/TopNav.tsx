@@ -1,7 +1,8 @@
 "use client";
 
+import { useRef, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import type { LandingNavItem } from "@/content/landing";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { ActionButton } from "@/components/ui/ActionButton";
@@ -11,15 +12,31 @@ interface TopNavProps {
 }
 
 export const TopNav = ({ nav }: TopNavProps) => {
+  const { scrollY } = useScroll();
+  const lastScrollY = useRef(0);
+  const [hidden, setHidden] = useState(false);
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const diff = latest - lastScrollY.current;
+    if (latest < 80) {
+      setHidden(false);
+    } else if (diff > 5) {
+      setHidden(true);
+    } else if (diff < -5) {
+      setHidden(false);
+    }
+    lastScrollY.current = latest;
+  });
+
   return (
     <motion.header
       initial={{ y: -40, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.8, ease: [0.2, 0.65, 0.3, 0.95] }}
-      className="sticky top-0 z-40 border-b border-white/60 bg-canvas/70 backdrop-blur-xl"
+      animate={{ y: hidden ? "-100%" : 0, opacity: 1 }}
+      transition={{ duration: 0.35, ease: [0.2, 0.65, 0.3, 0.95] }}
+      className="sticky top-0 z-40 border-b border-black/5 bg-white"
     >
       <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4 sm:px-8">
-        <Link href="#hero" aria-label="OrbAI home" className="scale-50 origin-left sm:scale-75 lg:scale-100">
+        <Link href="#hero" aria-label="kAyphI home" className="scale-50 origin-left sm:scale-75 lg:scale-100">
           <LogoMark />
         </Link>
 

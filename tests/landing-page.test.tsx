@@ -8,7 +8,7 @@ describe("landing page parity", () => {
     render(<HomePage />);
 
     expect(screen.getByText(landingContent.hero.badge)).toBeInTheDocument();
-    expect(screen.getByText(landingContent.hero.title)).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: landingContent.hero.title })[0]).toBeInTheDocument();
     expect(screen.getByText(landingContent.services.title)).toBeInTheDocument();
     expect(screen.getByText(landingContent.projects.title)).toBeInTheDocument();
     expect(screen.getByText(landingContent.pricing.title)).toBeInTheDocument();
