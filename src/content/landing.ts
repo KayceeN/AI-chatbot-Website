@@ -184,8 +184,7 @@ export const landingContent: LandingPageContent = {
     title: "kAyphI",
     subtitle: "Custom AI solutions, built for the innovators of tomorrow",
     ctas: [
-      { label: "Get Template", href: "#pricing", variant: "primary" },
-      { label: "See Our Services", href: "#services", variant: "secondary" }
+      { label: "See Our Services", href: "#services", variant: "primary" }
     ],
     quote:
       "We harness your data, understand your audience, and use AI to help your brand rise above the noise. The best part? We execute, too.",

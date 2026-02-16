@@ -40,11 +40,11 @@ export const TeamSection = ({ content }: TeamSectionProps) => {
       />
 
       <div className="relative">
-        {/* Carousel navigation */}
+        {/* Carousel navigation — hidden on small screens, visible on md+ */}
         <button
           type="button"
           onClick={() => scroll("left")}
-          className="absolute -left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black text-white shadow-button transition-opacity hover:opacity-80"
+          className="absolute -left-4 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black text-white shadow-button transition-opacity hover:opacity-80 md:flex"
           aria-label="Previous team member"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -52,7 +52,7 @@ export const TeamSection = ({ content }: TeamSectionProps) => {
         <button
           type="button"
           onClick={() => scroll("right")}
-          className="absolute -right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black text-white shadow-button transition-opacity hover:opacity-80"
+          className="absolute -right-4 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black text-white shadow-button transition-opacity hover:opacity-80 md:flex"
           aria-label="Next team member"
         >
           <ChevronRight className="h-5 w-5" />

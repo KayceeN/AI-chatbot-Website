@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import "@/styles/globals.css";
 
@@ -6,6 +6,10 @@ const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope"
 });
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "kAyphI",

@@ -32,7 +32,7 @@ export const ProcessSection = ({ content }: ProcessSectionProps) => {
           >
             <GlassCard className="relative h-full overflow-hidden">
               {/* Decorative step number */}
-              <span className="pointer-events-none absolute right-4 top-2 text-[5rem] font-bold leading-none text-ink/[0.04]">
+              <span className="pointer-events-none absolute right-4 top-2 text-[3rem] font-bold leading-none text-ink/[0.04] sm:text-[5rem]">
                 {step.id}
               </span>
               <div className="relative">
@@ -57,7 +57,7 @@ export const ProcessSection = ({ content }: ProcessSectionProps) => {
           transition={{ duration: 0.56, delay: 0.16 }}
         >
           <GlassCard className="relative overflow-hidden">
-            <span className="pointer-events-none absolute right-4 top-2 text-[5rem] font-bold leading-none text-ink/[0.04]">
+            <span className="pointer-events-none absolute right-4 top-2 text-[3rem] font-bold leading-none text-ink/[0.04] sm:text-[5rem]">
               {content.steps[2].id}
             </span>
             <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]">

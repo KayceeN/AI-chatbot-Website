@@ -58,13 +58,13 @@ export const PricingSection = ({ content }: PricingSectionProps) => {
         {content.plans.map((plan) => (
           <GlassCard key={plan.name} className="relative h-full">
             <div className="mb-5 flex items-center gap-2">
-              <h3 className="text-3xl font-semibold tracking-tight text-ink">{plan.name}</h3>
+              <h3 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">{plan.name}</h3>
               {plan.popular ? (
                 <span className="rounded-full bg-black px-3 py-1 text-xs font-semibold text-white">Popular</span>
               ) : null}
             </div>
 
-            <p className="mb-3 text-5xl font-semibold tracking-tight text-ink">{mode === "monthly" ? plan.monthly : plan.yearly}</p>
+            <p className="mb-3 text-3xl font-semibold tracking-tight text-ink sm:text-5xl">{mode === "monthly" ? plan.monthly : plan.yearly}</p>
             <p className="mb-6 text-lg text-muted">{plan.blurb}</p>
 
             <ActionButton

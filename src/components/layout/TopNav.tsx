@@ -36,7 +36,7 @@ export const TopNav = ({ nav }: TopNavProps) => {
       className="sticky top-0 z-40 border-b border-black/5 bg-white"
     >
       <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4 sm:px-8">
-        <Link href="#hero" aria-label="kAyphI home" className="scale-50 origin-left sm:scale-75 lg:scale-100">
+        <Link href="#hero" aria-label="kAyphI home" className="scale-[0.65] origin-left sm:scale-75 lg:scale-100">
           <LogoMark />
         </Link>
 
@@ -53,7 +53,7 @@ export const TopNav = ({ nav }: TopNavProps) => {
           ))}
         </ul>
 
-        <ActionButton cta={{ label: "Get Started", href: "#contact", variant: "primary" }} className="px-5 py-2.5 text-sm" />
+        <ActionButton cta={{ label: "Get Started", href: "#contact", variant: "primary" }} className="min-h-[44px] px-5 py-2.5 text-sm" />
       </nav>
     </motion.header>
   );

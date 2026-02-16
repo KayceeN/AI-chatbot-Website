@@ -59,16 +59,16 @@ export const ProjectsSection = ({ content }: ProjectsSectionProps) => {
             transition={{ duration: 0.55 }}
             className="grid gap-6 lg:grid-cols-[1.05fr_1fr]"
           >
-            <div className="min-h-[20rem] rounded-3xl bg-gradient-to-br from-[#1d212d] via-[#313744] to-[#101319] shadow-soft" />
+            <div className="min-h-[14rem] rounded-3xl bg-gradient-to-br from-[#1d212d] via-[#313744] to-[#101319] shadow-soft sm:min-h-[20rem]" />
 
             <div className="flex flex-col justify-center">
               <p className="mb-2 text-sm font-bold tracking-[0.16em] text-muted">{activeCase.id}</p>
-              <h3 className="mb-3 text-4xl font-semibold tracking-tight text-ink">{activeCase.title}</h3>
+              <h3 className="mb-3 text-2xl font-semibold tracking-tight text-ink sm:text-4xl">{activeCase.title}</h3>
               <p className="mb-6 text-lg text-muted">{activeCase.body}</p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {activeCase.metrics.map((metric) => (
                   <div key={metric.label} className="rounded-2xl border border-white/80 bg-white/70 p-5 shadow-plate">
-                    <p className="text-5xl font-semibold tracking-tight text-ink">{metric.value}</p>
+                    <p className="text-3xl font-semibold tracking-tight text-ink sm:text-5xl">{metric.value}</p>
                     <p className="mt-2 text-base text-muted">{metric.label}</p>
                   </div>
                 ))}

@@ -33,7 +33,7 @@ export const ComparisonSection = ({ content }: ComparisonSectionProps) => {
         {/* kAyphI column */}
         <motion.div variants={getPreset("fadeUp") as never} transition={{ duration: 0.7 }}>
           <GlassCard className="flex h-full flex-col">
-            <h3 className="mb-6 text-3xl font-semibold tracking-tight text-ink">{content.us.label}</h3>
+            <h3 className="mb-6 text-xl font-semibold tracking-tight text-ink sm:text-3xl">{content.us.label}</h3>
             <ul className="mb-6 flex-1 space-y-3">
               {content.us.features.map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-base text-muted">
@@ -49,7 +49,7 @@ export const ComparisonSection = ({ content }: ComparisonSectionProps) => {
         {/* Others column */}
         <motion.div variants={getPreset("fadeUp") as never} transition={{ duration: 0.7 }}>
           <GlassCard className="flex h-full flex-col">
-            <h3 className="mb-6 text-3xl font-semibold tracking-tight text-ink">{content.others.label}</h3>
+            <h3 className="mb-6 text-xl font-semibold tracking-tight text-ink sm:text-3xl">{content.others.label}</h3>
             <ul className="flex-1 space-y-3">
               {content.others.features.map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-base text-muted">
