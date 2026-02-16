@@ -45,7 +45,7 @@ All planned dependencies were pre-approved during the 2026-02-14 brainstorming s
 ```
 src/
 ├── app/
-│   ├── layout.tsx              # Root layout (Manrope font, metadata, global styles)
+│   ├── layout.tsx              # Root layout (Manrope font, metadata, viewport-fit: cover)
 │   └── page.tsx                # Landing page (composes all section components)
 ├── components/
 │   ├── layout/

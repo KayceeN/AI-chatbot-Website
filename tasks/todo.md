@@ -33,6 +33,14 @@
 - [x] Process section restructured with decorative step numbers
 - [x] Project tab active state animation (layoutId indicator)
 
+## Mobile Optimization (Complete — PR #5)
+- [x] Remove gap between header and hero video on mobile and desktop
+- [x] Make hero video span full screen width on all viewports
+- [x] Hide kAyphI title on mobile (logo in nav is sufficient)
+- [x] Move CTA button above Safari bottom toolbar using safe-area-inset
+- [x] Remove heavy white overlay that washed out hero video on mobile
+- [x] Add viewport-fit: cover for proper safe area inset support
+
 ## Phase B: Infrastructure Setup
 - [ ] Upgrade Next.js 14 → 15 (per approved design doc)
 - [ ] Install pre-approved dependencies (Supabase, shadcn/ui, RHF, Zod, Lucide)

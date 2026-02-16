@@ -162,6 +162,17 @@ CSS pseudo-elements in `src/styles/globals.css`:
 - Process section restructured with decorative step numbers
 - Project tabs have layoutId active indicator
 
+### Hero Mobile Optimization (PR #5)
+
+- Hero video spans full viewport width on all breakpoints (no side padding)
+- Zero gap between sticky header and hero section
+- "kAyphI" title hidden on mobile (logo in nav is sufficient), visible from `md` breakpoint up
+- Badge ("AI Automation for Businesses") sits at top of hero on mobile
+- CTA button positioned at bottom with `calc(5rem + env(safe-area-inset-bottom))` to clear Safari toolbar
+- Mobile overlay reduced from heavy white gradient (0.97 opacity) to subtle (matching desktop)
+- `viewport-fit: cover` enabled in root layout for safe area inset support
+- Desktop layout retains title, badge, and CTA positioning from Phase A
+
 ### Remaining Gaps
 
 - All image areas still use gradient placeholder `<div>` elements
