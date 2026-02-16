@@ -36,7 +36,7 @@ export const FeaturesSection = ({ content }: FeaturesSectionProps) => {
           <motion.div key={item.title} variants={getPreset("fadeUp") as never} transition={{ duration: 0.7 }}>
             <GlassCard className="h-full">
               <div className={`mb-5 h-40 rounded-2xl bg-gradient-to-br ${visualClass[item.visual]} shadow-inner`} />
-              <h3 className="mb-2 text-3xl font-semibold text-ink">{item.title}</h3>
+              <h3 className="mb-2 text-xl font-semibold text-ink sm:text-3xl">{item.title}</h3>
               <p className="text-lg text-muted">{item.body}</p>
             </GlassCard>
           </motion.div>

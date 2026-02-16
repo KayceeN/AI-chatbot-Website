@@ -19,7 +19,7 @@ export const HeroSection = ({ content }: HeroSectionProps) => {
   return (
     <SectionShell
       id="hero"
-      className="relative flex min-h-screen max-w-none items-center overflow-hidden bg-white px-0 py-0 pt-20 sm:px-0 sm:pt-24"
+      className="relative flex min-h-screen !max-w-none items-start overflow-hidden bg-white !px-0 !py-0 sm:!px-0"
     >
       <motion.div
         className="hero-media-shell relative mx-auto w-full max-w-none"
@@ -37,7 +37,7 @@ export const HeroSection = ({ content }: HeroSectionProps) => {
               <BadgePill text={content.badge} icon={<Sparkles className="h-3.5 w-3.5" />} />
             </motion.div>
 
-            <h1 className="mb-3 text-5xl font-semibold tracking-tight text-ink sm:text-7xl md:text-8xl" aria-label={content.title}>
+            <h1 className="mb-3 hidden text-5xl font-semibold tracking-tight text-ink sm:text-7xl md:block md:text-8xl" aria-label={content.title}>
               {titleChars.map((char, index) => {
                 const accentClass = char === "A" ? "brand-letter-a" : char === "I" ? "brand-letter-i" : "";
                 return (
@@ -47,19 +47,13 @@ export const HeroSection = ({ content }: HeroSectionProps) => {
                 );
               })}
             </h1>
-            <p className="mx-auto mb-8 max-w-2xl text-lg text-muted md:mx-0">{content.subtitle}</p>
-
-            <div className="mb-10 flex flex-wrap items-center justify-center gap-3 md:justify-start">
-              {content.ctas.map((cta) => (
-                <ActionButton key={cta.label} cta={cta} />
-              ))}
-            </div>
-
-            <blockquote className="mx-auto max-w-2xl text-balance text-base leading-relaxed text-muted md:mx-0">
-              “{content.quote}”
-              <footer className="mt-2 text-sm font-semibold text-ink/70">{content.quoteAuthor}</footer>
-            </blockquote>
           </div>
+        </div>
+
+        <div className="hero-cta-bottom absolute inset-x-0 z-10 flex justify-center">
+          {content.ctas.map((cta) => (
+            <ActionButton key={cta.label} cta={cta} />
+          ))}
         </div>
       </motion.div>
     </SectionShell>

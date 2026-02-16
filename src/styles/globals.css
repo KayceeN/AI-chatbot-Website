@@ -68,6 +68,16 @@ a {
   min-height: clamp(34rem, 88vh, 64rem);
 }
 
+.hero-cta-bottom {
+  bottom: 2rem;
+}
+
+@media (max-width: 767px) {
+  .hero-cta-bottom {
+    bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 .hero-poster-layer,
 .hero-video-layer {
   object-fit: cover;
@@ -144,9 +154,24 @@ a {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .hero-media-shell {
-    min-height: 80vh;
+    min-height: 100svh;
+  }
+
+  .hero-media-overlay {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.04) 30%,
+      rgba(255, 255, 255, 0.01) 48%,
+      rgba(255, 255, 255, 0) 62%
+    );
+  }
+
+  .hero-content-layer {
+    align-items: flex-start;
+    padding-top: 0;
   }
 }
 

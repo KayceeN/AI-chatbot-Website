@@ -17,9 +17,9 @@ const socialLinks = [
 
 export const FooterSection = ({ content }: FooterSectionProps) => {
   return (
-    <SectionShell id="footer" className="relative min-h-[70vh] overflow-hidden pb-24">
+    <SectionShell id="footer" className="relative min-h-[50vh] overflow-hidden pb-16 sm:min-h-[70vh] sm:pb-24">
       <div className="orb-rings" aria-hidden />
-      <div className="relative mx-auto flex max-w-3xl flex-col items-center gap-6 rounded-[42px] border border-white/70 bg-white/45 p-12 text-center shadow-soft backdrop-blur-sm">
+      <div className="relative mx-auto flex max-w-3xl flex-col items-center gap-6 rounded-3xl border border-white/70 bg-white/45 p-6 text-center shadow-soft backdrop-blur-sm sm:rounded-[42px] sm:p-12">
         <div className="flex gap-4">
           {socialLinks.map(({ icon: Icon, href, label }) => (
             <a

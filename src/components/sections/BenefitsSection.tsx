@@ -36,7 +36,7 @@ export const BenefitsSection = ({ content }: BenefitsSectionProps) => {
           <motion.div key={item.title} variants={getPreset("fadeUp") as never} transition={{ duration: 0.72 }}>
             <GlassCard className="h-full">
               <div className="mb-5 h-36 rounded-2xl bg-gradient-to-br from-white to-[#e8e8ea] shadow-inner" />
-              <h3 className="mb-2 text-3xl font-semibold tracking-tight text-ink">{item.title}</h3>
+              <h3 className="mb-2 text-xl font-semibold tracking-tight text-ink sm:text-3xl">{item.title}</h3>
               <p className="text-lg text-muted">{item.body}</p>
             </GlassCard>
           </motion.div>
