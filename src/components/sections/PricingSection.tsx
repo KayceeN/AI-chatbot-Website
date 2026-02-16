@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -15,32 +15,33 @@ type BillingMode = "monthly" | "yearly";
 
 export const PricingSection = ({ content }: PricingSectionProps) => {
   const [mode, setMode] = useState<BillingMode>("monthly");
-  const buttons = useMemo(
-    () => [
-      { key: "monthly", label: "Monthly" },
-      { key: "yearly", label: "Yearly" }
-    ],
-    []
-  );
 
   return (
     <SectionShell id="pricing">
       <SectionHeading badge={content.badge} title={content.title} subtitle={content.subtitle} />
 
       <div className="mx-auto mb-8 flex w-fit items-center gap-2 rounded-full border border-white/80 bg-panel p-1 shadow-plate">
-        {buttons.map((button) => (
-          <button
-            key={button.key}
-            type="button"
-            onClick={() => setMode(button.key as BillingMode)}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-              mode === button.key ? "bg-white text-ink shadow-plate" : "text-muted"
-            }`}
-          >
-            {button.label}
-          </button>
-        ))}
-        <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-ink shadow-plate">30% off</span>
+        <button
+          type="button"
+          onClick={() => setMode("monthly")}
+          className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+            mode === "monthly" ? "bg-white text-ink shadow-plate" : "text-muted"
+          }`}
+        >
+          Monthly
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("yearly")}
+          className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+            mode === "yearly" ? "bg-white text-ink shadow-plate" : "text-muted"
+          }`}
+        >
+          Yearly
+          <span className={`rounded-full px-2 py-0.5 text-xs font-bold transition-colors ${
+            mode === "yearly" ? "bg-ink text-white" : "bg-white text-ink shadow-plate"
+          }`}>30% off</span>
+        </button>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
