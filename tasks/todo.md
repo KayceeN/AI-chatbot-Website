@@ -63,9 +63,15 @@ Prioritized by recommended implementation order. Based on deep research of top A
 - [ ] Add form validation (Zod schema for name, email, subject, message)
 - [ ] Add success/error feedback states to the form UI
 
-### Step 3: Booking Integration
-- [ ] Embed Calendly or Cal.com on demo/contact page
-- [ ] Replace "Book a call" dead link with real booking widget
+### Step 3: Native Booking System
+- [ ] Create `/book` or `/demo` page with booking UI
+- [ ] Build availability calendar component (date picker + time slot grid)
+- [ ] Create booking API routes (`/api/bookings/route.ts` — CRUD for appointments)
+- [ ] Store bookings in Supabase (bookings table: date, time, name, email, notes, status)
+- [ ] Add booking confirmation flow (success page + email notification)
+- [ ] Add timezone detection and display (Intl API)
+- [ ] Admin view: manage availability windows, view/cancel bookings (dashboard)
+- [ ] Replace "Book a call" dead link with link to `/book` page
 - [ ] Add "Book a Demo" as secondary CTA alongside "Get Started"
 
 ### Step 4: Replace Placeholder Images
