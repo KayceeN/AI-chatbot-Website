@@ -31,7 +31,7 @@ For the full product roadmap, see [docs/plans/2026-02-14-full-product-plan.md](d
 | UI Components | shadcn/ui (copied, not installed) | Pre-approved | Accessible primitives |
 | Charts | Recharts (`recharts`) | Pre-approved | Analytics visualizations |
 | Forms | React Hook Form + Zod (`react-hook-form`, `@hookform/resolvers`, `zod`) | Pre-approved | Form handling + validation |
-| Icons | Lucide React (`lucide-react`) | Pre-approved | SVG icon system |
+| Icons | Lucide React (`lucide-react`) | **Installed** | SVG icon system |
 | Container | Docker + docker-compose | Phase B | Development environment |
 
 All planned dependencies were pre-approved during the 2026-02-14 brainstorming session. Any additional dependencies require explicit user approval per SECURITY.md.
@@ -52,24 +52,26 @@ src/
 │   │   └── TopNav.tsx          # Sticky navigation bar
 │   ├── sections/
 │   │   ├── BenefitsSection.tsx
+│   │   ├── ComparisonSection.tsx   # "Precision vs Basic" two-column comparison
 │   │   ├── ContactSection.tsx
 │   │   ├── CustomersSection.tsx
 │   │   ├── FAQSection.tsx
 │   │   ├── FeaturesSection.tsx
 │   │   ├── FooterSection.tsx
+│   │   ├── HeroMedia.tsx           # Lazy-loaded poster→video with crossfade
 │   │   ├── HeroSection.tsx
 │   │   ├── PricingSection.tsx
 │   │   ├── ProcessSection.tsx
 │   │   ├── ProjectsSection.tsx
-│   │   └── ServicesSection.tsx
+│   │   ├── ServicesSection.tsx
+│   │   └── TeamSection.tsx         # Team carousel with social icons
 │   └── ui/
-│       ├── ActionButton.tsx    # CTA button (primary/secondary variants)
-│       ├── BadgePill.tsx       # Section label pill
-│       ├── FloatingDock.tsx    # Fixed bottom-right actions
+│       ├── ActionButton.tsx    # CTA button with ArrowUpRight icon
+│       ├── BadgePill.tsx       # Section label pill (accepts ReactNode icon)
 │       ├── GlassCard.tsx       # Frosted glass card
 │       ├── LogoMark.tsx        # Brand logo
 │       ├── Reveal.tsx          # Scroll-triggered animation wrapper
-│       ├── SectionHeading.tsx  # Badge + title + subtitle
+│       ├── SectionHeading.tsx  # Badge + title + subtitle (passes icon to BadgePill)
 │       └── SectionShell.tsx    # Section container (max-width, padding)
 ├── content/
 │   └── landing.ts              # Typed content model (LandingPageContent)
@@ -157,7 +159,8 @@ page.tsx
   └── imports landingContent from src/content/landing.ts
   └── composes section components in order:
       TopNav → Hero → Benefits → Features → Services → Process →
-      Projects → Customers → Pricing → Contact → FAQ → Footer → FloatingDock
+      Projects → Customers → Pricing → Comparison → Team →
+      Contact → FAQ → Footer
 ```
 
 Each section component:
@@ -175,19 +178,20 @@ landing.ts (typed content)
     ▼
 page.tsx (server component, static render)
     │
-    ├── TopNav (client: Framer Motion entry animation)
-    ├── HeroSection (client: animation)
-    ├── BenefitsSection (client: stagger animation)
+    ├── TopNav (client: scroll-direction hide/show, Framer Motion)
+    ├── HeroSection (client: animation, lazy video via HeroMedia)
+    ├── BenefitsSection (client: stagger animation, marquee ticker)
     ├── FeaturesSection (client: stagger animation)
     ├── ServicesSection (client: animation)
-    ├── ProcessSection (client: animation)
-    ├── ProjectsSection (client: tab state)
-    ├── CustomersSection (client: animation)
-    ├── PricingSection (client: toggle state)
+    ├── ProcessSection (client: animation, decorative step numbers)
+    ├── ProjectsSection (client: tab state, layoutId tab indicator)
+    ├── CustomersSection (client: star ratings, avatar placeholders)
+    ├── PricingSection (client: toggle state, layoutId sliding indicator)
+    ├── ComparisonSection (client: stagger animation)
+    ├── TeamSection (client: horizontal carousel with scroll buttons)
     ├── ContactSection (client: form state)
-    ├── FAQSection (client: accordion state)
-    ├── FooterSection (client: animation)
-    └── FloatingDock (server, static)
+    ├── FAQSection (client: accordion state, AnimatePresence height animation)
+    └── FooterSection (client: social icons, copyright)
 ```
 
 All section components are `"use client"` due to Framer Motion or React state. The root `page.tsx` is a server component that imports and composes them.
@@ -204,8 +208,7 @@ The entire landing page copy is managed through a single typed content model:
 This type defines:
 - `brand` — brand name string
 - `nav` — navigation items array
-- `floatingActions` — floating dock labels
-- Section-specific content for all 11 sections (hero, benefits, features, services, process, projects, customers, pricing, contact, faq, footer)
+- Section-specific content for all 13 sections (hero, benefits, features, services, process, projects, customers, pricing, comparison, team, contact, faq, footer)
 
 **Key types:**
 - `SectionId` — union type of all section identifiers
@@ -315,7 +318,11 @@ All API routes follow a consistent pattern:
 | Unit/Integration | Vitest + Testing Library | `vitest.config.ts` | `tests/landing-page.test.tsx` |
 | E2E | Playwright | `playwright.config.ts` | `tests/e2e/landing.spec.ts` |
 
-**Test setup:** `tests/setup.tsx` — Jest DOM matchers.
+**Test files:**
+- `tests/landing-page.test.tsx` — core copy, section order, nav items
+- `tests/hero-media.test.tsx` — poster/video lazy-load, reduced motion, crossfade
+
+**Test setup:** `tests/setup.tsx` — Jest DOM matchers, IntersectionObserver/matchMedia mocks.
 **Path aliases:** Vitest resolves `@/*` → `src/*` via config.
 
 ### Planned

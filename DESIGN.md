@@ -87,13 +87,12 @@ All reusable primitives live in `src/components/ui/`:
 | Component | File | Purpose |
 |-----------|------|---------|
 | `GlassCard` | `GlassCard.tsx` | Frosted card: `rounded-panel border border-white/75 bg-panel/90 p-6 shadow-soft backdrop-blur-[2px]` |
-| `BadgePill` | `BadgePill.tsx` | Section label: rounded-full, border, shadow-plate, uppercase, with symbol prefix |
-| `ActionButton` | `ActionButton.tsx` | CTA button: primary (black bg) or secondary (panel bg), both with shadow + hover translate |
+| `BadgePill` | `BadgePill.tsx` | Section label: rounded-full, border, shadow-plate, uppercase, with lucide-react icon |
+| `ActionButton` | `ActionButton.tsx` | CTA button with ArrowUpRight icon: primary (black bg) or secondary (panel bg), both with shadow + hover translate |
 | `SectionShell` | `SectionShell.tsx` | Section wrapper: max-w-6xl, horizontal padding, vertical padding |
 | `SectionHeading` | `SectionHeading.tsx` | Badge + h2 + subtitle, center or left aligned |
 | `Reveal` | `Reveal.tsx` | Scroll-triggered animation wrapper using Framer Motion `whileInView` |
 | `LogoMark` | `LogoMark.tsx` | Brand logo component |
-| `FloatingDock` | `FloatingDock.tsx` | Fixed bottom-right action buttons |
 
 ### Motion System
 
@@ -150,16 +149,24 @@ CSS pseudo-elements in `src/styles/globals.css`:
 - `border-radius: 0.9rem`
 - Focus: darker border + subtle ring shadow
 
-### Known Gaps (see visual audit for details)
+### Resolved Gaps (Phase A, PR #3)
 
-- All image areas use gradient placeholder `<div>` elements
-- Two entire sections not built (Comparison, Team)
-- FAQ has no height animation (instant show/hide)
-- Nav does not hide on scroll down
-- Icons are text characters / emoji instead of SVG
-- No CTA arrow icons
-- No customer star ratings or avatars
-- No footer social icons or copyright
+- Comparison and Team sections built
+- FAQ has smooth height animation (AnimatePresence)
+- Nav hides on scroll down, reveals on scroll up
+- All icons replaced with lucide-react SVGs (badges, FAQ chevrons, contact, pricing checks, CTA arrows, footer social, star ratings)
+- Customer star ratings and avatar placeholders added
+- Footer social icons (Twitter, Instagram, LinkedIn) and copyright added
+- Pricing toggle has layoutId sliding indicator
+- Benefits has marquee ticker animation
+- Process section restructured with decorative step numbers
+- Project tabs have layoutId active indicator
+
+### Remaining Gaps
+
+- All image areas still use gradient placeholder `<div>` elements
+- Services interactive mockup illustrations not yet built (CSS/SVG approximations)
+- 3D orb remains CSS rings (enhancement to realistic sphere pending)
 
 ---
 

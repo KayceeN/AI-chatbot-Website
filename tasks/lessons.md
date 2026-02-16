@@ -26,3 +26,11 @@ If the user asks to remove gray framing, update shared background tokens (`canva
 
 ### Fix off-white/blue background drift in the media itself, not only in CSS
 When users report frame color shifts during motion, prioritize a frame-level video processing pass (background normalization) and then reduce overlays; CSS-only whitening is not enough for moving-frame artifacts.
+
+## 2026-02-16: Phase A Implementation
+
+### Use layoutId for sliding indicators, not absolute positioning with percentages
+The pricing toggle initially used `position: absolute` with `left/right` percentages to position the sliding pill. This broke when button widths didn't match the percentages, causing the indicator to overlap text. The fix: use Framer Motion `layoutId` — each button conditionally renders a `motion.div` with the same `layoutId`, and Framer Motion auto-animates the transition. This pattern auto-sizes to the active button and is reusable (also used for project tabs).
+
+### Test queries must account for new sections adding duplicate headings
+Adding ComparisonSection introduced a second heading containing "kAyphI", which broke `getByRole("heading", { name: "kAyphI" })`. When adding new sections, check if any heading text duplicates existing headings and update tests to use `getAllByRole(...)[0]` or more specific selectors.
