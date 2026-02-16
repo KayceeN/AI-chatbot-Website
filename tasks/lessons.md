@@ -32,5 +32,11 @@ When users report frame color shifts during motion, prioritize a frame-level vid
 ### Use layoutId for sliding indicators, not absolute positioning with percentages
 The pricing toggle initially used `position: absolute` with `left/right` percentages to position the sliding pill. This broke when button widths didn't match the percentages, causing the indicator to overlap text. The fix: use Framer Motion `layoutId` — each button conditionally renders a `motion.div` with the same `layoutId`, and Framer Motion auto-animates the transition. This pattern auto-sizes to the active button and is reusable (also used for project tabs).
 
+### env(safe-area-inset-bottom) does not account for Safari toolbar
+`env(safe-area-inset-bottom)` only covers the physical home indicator on notched iPhones (~34px). The Safari bottom toolbar (~44px) is separate browser chrome that overlaps the viewport. To clear both, use an explicit offset like `calc(5rem + env(safe-area-inset-bottom))` on mobile. Also requires `viewport-fit: cover` in the viewport meta tag (via Next.js `Viewport` export) for safe area insets to activate.
+
+### Tailwind class ordering does not guarantee override in composed components
+When a component applies base classes (e.g., `max-w-6xl px-6`) and accepts a `className` prop with overrides (e.g., `max-w-none px-0`), the override may not win because Tailwind CSS specificity depends on stylesheet order, not HTML class order. Use `!important` prefix (`!max-w-none !px-0`) when overrides must reliably win against base component classes.
+
 ### Test queries must account for new sections adding duplicate headings
 Adding ComparisonSection introduced a second heading containing "kAyphI", which broke `getByRole("heading", { name: "kAyphI" })`. When adding new sections, check if any heading text duplicates existing headings and update tests to use `getAllByRole(...)[0]` or more specific selectors.
