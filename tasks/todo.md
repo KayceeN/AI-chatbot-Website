@@ -18,17 +18,20 @@
 - [x] Write full product extension plan (`docs/plans/2026-02-14-full-product-plan.md`)
 - [x] Update tasks/todo.md with phased plan
 
-## Phase A: Fix Visual Gaps
-- [ ] **P0** Add Comparison section ("Precision vs Basic" — ref frames 0055–0056)
-- [ ] **P0** Add Team section ("Team Behind Success" — ref frames 0056–0058)
+## Phase A: Fix Visual Gaps (Complete — PR #3)
+- [x] **P0** Add Comparison section ("Precision vs Basic" — ref frames 0055–0056)
+- [x] **P0** Add Team section ("Team Behind Success" — ref frames 0056–0058)
 - [ ] **P0** Replace gradient placeholders with substitute images (Unsplash/AI-generated)
-- [ ] **P1** FAQ accordion animation (AnimatePresence + auto-height measurement)
-- [ ] **P1** Scroll-based nav hide/show (useScroll + useMotionValueEvent)
-- [ ] **P1** CTA arrow icons, section badge icons, FAQ chevrons (Lucide React)
-- [ ] **P1** Customer star ratings, avatars, footer social icons + copyright
-- [ ] **P2** Pricing toggle slide animation
+- [x] **P1** FAQ accordion animation (AnimatePresence + auto-height measurement)
+- [x] **P1** Scroll-based nav hide/show (useScroll + useMotionValueEvent)
+- [x] **P1** CTA arrow icons, section badge icons, FAQ chevrons (Lucide React)
+- [x] **P1** Customer star ratings, avatars, footer social icons + copyright
+- [x] **P2** Pricing toggle slide animation (layoutId sliding indicator)
 - [ ] **P2** Services interactive mockup illustrations (CSS/SVG approximations)
 - [ ] **P2** 3D orb enhancement (CSS/canvas improvement over current rings)
+- [x] Benefits marquee ticker animation
+- [x] Process section restructured with decorative step numbers
+- [x] Project tab active state animation (layoutId indicator)
 
 ## Phase B: Infrastructure Setup
 - [ ] Upgrade Next.js 14 → 15 (per approved design doc)
@@ -109,3 +112,18 @@ Any additional dependencies require explicit user approval per SECURITY.md.
 ## Phase 0 Review
 - All 5 documents written, committed, PR #1 merged to main.
 - Next session: begin Phase A (Fix Visual Gaps).
+
+## Phase A Review (PR #3)
+- Result: 10 of 13 Phase A items implemented. Remaining 3 are asset-dependent (placeholder images, services mocks, 3D orb).
+- Changes: installed lucide-react, replaced all emoji/text icons with SVGs (8 icon types), added 6 animations (FAQ accordion, nav scroll-hide, pricing layoutId toggle, marquee ticker, project tab indicator, team carousel), built 2 new sections (Comparison, Team), restructured Process section with decorative step numbers.
+- Bug fixed: pricing toggle sliding indicator overlapped "Yearly" text — replaced absolute positioning with layoutId approach.
+- Verification:
+  - `npm run lint` passed
+  - `npm run typecheck` passed
+  - `npm run build` passed
+  - `npm run test` passed (6/6 tests)
+- Risks:
+  - All image areas still use gradient placeholders (requires design assets).
+  - Services interactive mockup illustrations not yet built.
+  - 3D orb remains CSS rings.
+- Next: Phase B (Infrastructure Setup) or asset sourcing for remaining Phase A items.
