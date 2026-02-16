@@ -1,5 +1,15 @@
 # TODO
 
+## 2026-02-16 Hero Video Integration (Complete)
+- [x] Generate hero media assets in `public/videos/hero` (`hero.mp4`, `hero.webm`, `hero-poster.webp`)
+- [x] Add typed hero media config to `src/content/landing.ts`
+- [x] Implement `HeroMedia` with poster-first paint + lazy start gates (interactive/idle/in-view)
+- [x] Add crossfade from poster to video on first playable frame
+- [x] Respect reduced motion (`poster-only`, no autoplay/lazy load)
+- [x] Lock hero layout with fixed aspect ratio and contrast overlay for text readability
+- [x] Add unit tests for hero media behavior and e2e assertions for reduced-motion/video state
+- [x] Verify with `npm run lint`, `npm run test`, `npm run typecheck`, `npm run build`, `npm run test:e2e`
+
 ## Phase 0: Audit & Documentation (Complete)
 - [x] Audit Codex build against reference frames
 - [x] Write visual audit report (`docs/plans/2026-02-14-visual-audit.md`)

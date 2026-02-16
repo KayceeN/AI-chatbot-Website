@@ -1,3 +1,4 @@
+import { Mail, Phone } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SectionShell } from "@/components/ui/SectionShell";
@@ -7,17 +8,27 @@ interface ContactSectionProps {
   content: LandingPageContent["contact"];
 }
 
+const contactIcons: Record<string, React.ReactNode> = {
+  Email: <Mail className="h-5 w-5" />,
+  Call: <Phone className="h-5 w-5" />,
+};
+
 export const ContactSection = ({ content }: ContactSectionProps) => {
   return (
     <SectionShell id="contact">
-      <SectionHeading badge={content.badge} title={content.title} subtitle={content.subtitle} />
+      <SectionHeading
+        badge={content.badge}
+        title={content.title}
+        subtitle={content.subtitle}
+        icon={<Phone className="h-3.5 w-3.5" />}
+      />
 
       <div className="grid gap-5 lg:grid-cols-[1fr_1.15fr]">
         <div className="grid gap-5">
           {content.infoCards.map((card) => (
             <GlassCard key={card.title}>
               <p className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-black text-white shadow-button">
-                {card.title === "Email" ? "✉" : "☎"}
+                {contactIcons[card.title] ?? <Mail className="h-5 w-5" />}
               </p>
               <p className="mb-4 text-lg text-muted">{card.body}</p>
               <a href={card.linkHref} className="text-lg font-semibold text-ink underline">

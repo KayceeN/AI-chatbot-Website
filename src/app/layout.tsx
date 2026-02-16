@@ -8,7 +8,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "OrbAI Clone",
+  title: "kAyphI",
   description: "Single-page AI agency website rebuilt from the reference recording."
 };
 

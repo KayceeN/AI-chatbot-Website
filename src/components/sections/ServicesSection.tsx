@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Settings } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SectionShell } from "@/components/ui/SectionShell";
@@ -13,7 +14,7 @@ interface ServicesSectionProps {
 export const ServicesSection = ({ content }: ServicesSectionProps) => {
   return (
     <SectionShell id="services">
-      <SectionHeading badge={content.badge} title={content.title} subtitle={content.subtitle} />
+      <SectionHeading badge={content.badge} title={content.title} subtitle={content.subtitle} icon={<Settings className="h-3.5 w-3.5" />} />
 
       <div className="grid gap-5 md:grid-cols-2">
         {content.cards.map((item, index) => (

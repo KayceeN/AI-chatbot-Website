@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Star } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SectionShell } from "@/components/ui/SectionShell";
@@ -12,9 +13,17 @@ interface BenefitsSectionProps {
 }
 
 export const BenefitsSection = ({ content }: BenefitsSectionProps) => {
+  // Duplicate chips for seamless marquee loop
+  const marqueeChips = [...content.chips, ...content.chips];
+
   return (
     <SectionShell id="benefits">
-      <SectionHeading badge={content.badge} title={content.title} subtitle={content.subtitle} />
+      <SectionHeading
+        badge={content.badge}
+        title={content.title}
+        subtitle={content.subtitle}
+        icon={<Star className="h-3.5 w-3.5" />}
+      />
 
       <motion.div
         className="grid gap-5 md:grid-cols-3"
@@ -34,15 +43,18 @@ export const BenefitsSection = ({ content }: BenefitsSectionProps) => {
         ))}
       </motion.div>
 
-      <div className="mt-8 flex flex-wrap justify-center gap-3">
-        {content.chips.map((chip) => (
-          <span
-            key={chip}
-            className="rounded-full border border-white/80 bg-panel px-4 py-2 text-sm font-semibold text-ink/80 shadow-plate"
-          >
-            {chip}
-          </span>
-        ))}
+      {/* Marquee ticker */}
+      <div className="mt-8 overflow-hidden">
+        <div className="marquee-track flex w-max gap-3">
+          {marqueeChips.map((chip, i) => (
+            <span
+              key={`${chip}-${i}`}
+              className="whitespace-nowrap rounded-full border border-white/80 bg-panel px-4 py-2 text-sm font-semibold text-ink/80 shadow-plate"
+            >
+              {chip}
+            </span>
+          ))}
+        </div>
       </div>
     </SectionShell>
   );

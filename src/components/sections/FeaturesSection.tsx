@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Settings } from "lucide-react";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -22,7 +23,7 @@ const visualClass: Record<LandingPageContent["features"]["cards"][number]["visua
 export const FeaturesSection = ({ content }: FeaturesSectionProps) => {
   return (
     <SectionShell id="features">
-      <SectionHeading badge={content.badge} title={content.title} subtitle={content.subtitle} />
+      <SectionHeading badge={content.badge} title={content.title} subtitle={content.subtitle} icon={<Settings className="h-3.5 w-3.5" />} />
 
       <motion.div
         className="grid gap-5 md:grid-cols-2"

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
+import { Check, DollarSign } from "lucide-react";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -18,14 +20,29 @@ export const PricingSection = ({ content }: PricingSectionProps) => {
 
   return (
     <SectionShell id="pricing">
-      <SectionHeading badge={content.badge} title={content.title} subtitle={content.subtitle} />
+      <SectionHeading
+        badge={content.badge}
+        title={content.title}
+        subtitle={content.subtitle}
+        icon={<DollarSign className="h-3.5 w-3.5" />}
+      />
 
-      <div className="mx-auto mb-8 flex w-fit items-center gap-2 rounded-full border border-white/80 bg-panel p-1 shadow-plate">
+      <div className="relative mx-auto mb-8 flex w-fit items-center gap-2 rounded-full border border-white/80 bg-panel p-1 shadow-plate">
+        {/* Sliding indicator */}
+        <motion.div
+          className="absolute inset-y-1 rounded-full bg-white shadow-plate"
+          layout
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          style={{
+            left: mode === "monthly" ? "4px" : "50%",
+            right: mode === "yearly" ? "4px" : "50%",
+          }}
+        />
         <button
           type="button"
           onClick={() => setMode("monthly")}
-          className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-            mode === "monthly" ? "bg-white text-ink shadow-plate" : "text-muted"
+          className={`relative z-10 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+            mode === "monthly" ? "text-ink" : "text-muted"
           }`}
         >
           Monthly
@@ -33,8 +50,8 @@ export const PricingSection = ({ content }: PricingSectionProps) => {
         <button
           type="button"
           onClick={() => setMode("yearly")}
-          className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-            mode === "yearly" ? "bg-white text-ink shadow-plate" : "text-muted"
+          className={`relative z-10 flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+            mode === "yearly" ? "text-ink" : "text-muted"
           }`}
         >
           Yearly
@@ -64,8 +81,9 @@ export const PricingSection = ({ content }: PricingSectionProps) => {
 
             <ul className="space-y-2">
               {plan.features.map((feature) => (
-                <li key={feature} className="text-base text-muted">
-                  ✓ {feature}
+                <li key={feature} className="flex items-center gap-2 text-base text-muted">
+                  <Check className="h-4 w-4 flex-shrink-0 text-ink" />
+                  {feature}
                 </li>
               ))}
             </ul>

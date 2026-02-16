@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Grid3x3 } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SectionShell } from "@/components/ui/SectionShell";
@@ -17,22 +18,34 @@ export const ProjectsSection = ({ content }: ProjectsSectionProps) => {
 
   return (
     <SectionShell id="projects">
-      <SectionHeading badge={content.badge} title={content.title} subtitle={content.subtitle} />
+      <SectionHeading
+        badge={content.badge}
+        title={content.title}
+        subtitle={content.subtitle}
+        icon={<Grid3x3 className="h-3.5 w-3.5" />}
+      />
 
       <GlassCard>
-        <div className="mb-5 grid gap-2 sm:grid-cols-3">
+        <div className="relative mb-5 grid gap-2 sm:grid-cols-3">
           {content.tabs.map((tab, index) => (
             <button
               key={tab}
               type="button"
               onClick={() => setActiveIndex(index)}
-              className={`rounded-xl border px-4 py-3 text-xs font-semibold tracking-[0.08em] transition-all ${
+              className={`relative rounded-xl border px-4 py-3 text-xs font-semibold tracking-[0.08em] transition-colors ${
                 activeIndex === index
-                  ? "border-transparent bg-black text-white shadow-button"
+                  ? "border-transparent text-white"
                   : "border-white/80 bg-white/80 text-ink shadow-plate"
               }`}
             >
-              {tab}
+              {activeIndex === index && (
+                <motion.div
+                  layoutId="project-tab-active"
+                  className="absolute inset-0 rounded-xl bg-black shadow-button"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">{tab}</span>
             </button>
           ))}
         </div>
