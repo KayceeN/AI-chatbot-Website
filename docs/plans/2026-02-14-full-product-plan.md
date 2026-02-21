@@ -4,7 +4,7 @@
 **Status:** Approved (pending implementation)
 **Prerequisites:** Visual audit complete, DESIGN.md and ARCHITECTURE.md created
 
-This plan extends the OrbAI marketing site into a full SaaS product with authentication, AI chatbot, workflow automation, and analytics.
+This plan extends the kAyphI marketing site into a full AI automation platform with a public-facing chatbot widget (knowledge base + voice + multilingual + booking), authentication, workflow automation, and analytics.
 
 ---
 
@@ -154,17 +154,20 @@ Create `Dockerfile` and `docker-compose.yml`:
 Create `supabase/migrations/` with SQL files:
 
 1. **001_create_profiles.sql** — profiles table extending auth.users
-2. **002_create_conversations.sql** — chat conversation containers
-3. **003_create_messages.sql** — individual chat messages
-4. **004_create_workflows.sql** — workflow definitions
-5. **005_create_workflow_runs.sql** — workflow execution history
-6. **006_create_analytics_events.sql** — event log
+2. **002_create_conversations.sql** — chat conversation containers (public INSERT for visitor chats)
+3. **003_create_messages.sql** — individual chat messages (public INSERT for visitor messages)
+4. **004_create_knowledge_base.sql** — knowledge base documents + vector embeddings (pgvector); public SELECT for chatbot retrieval, owner CRUD
+5. **005_create_bookings.sql** — appointment bookings (public INSERT for visitors, owner management)
+6. **006_create_workflows.sql** — workflow definitions
+7. **007_create_workflow_runs.sql** — workflow execution history
+8. **008_create_analytics_events.sql** — event log
 
 Each migration includes:
 - Table creation with appropriate types and constraints
 - RLS enable statement
-- RLS policies: `auth.uid() = user_id` for SELECT, INSERT, UPDATE, DELETE
+- RLS policies: `auth.uid() = user_id` for owner operations; public INSERT/SELECT where noted above
 - Indexes on foreign keys and frequently queried columns
+- pgvector extension enabled in migration 004 for embedding storage
 
 ---
 
@@ -255,42 +258,331 @@ For every request:
 
 ---
 
-## Phase E: AI Chatbot
+## Phase E: AI Chatbot (Public-Facing Widget + Knowledge Base)
 
-### OpenAI Client
+The chatbot is kAyphI's core product. It is a **public-facing** widget embedded on the marketing site — no login required for visitors. It answers questions using a business knowledge base and can perform actions like booking appointments. The same chatbot architecture is what kAyphI sells to other businesses.
+
+### E.1: OpenAI Client
 
 **`src/lib/openai/client.ts`:**
 - OpenAI client configured with `OPENAI_API_KEY`
-- Default model: `gpt-4o-mini` (configurable)
-- System prompt for OrbAI assistant persona
+- Default model: `gpt-4o-mini` (configurable per deployment)
 
-### Chat API Route
+### E.2: Knowledge Base Infrastructure
+
+**`src/lib/chatbot/knowledge.ts`:**
+- Retrieval function: given a user message, find top-K relevant knowledge chunks via embedding similarity
+- Uses Supabase pgvector for vector storage and similarity search
+- Chunking utility: split source documents into overlapping chunks (~500 tokens each)
+
+**`src/lib/chatbot/system-prompt.ts`:**
+- Builds the system prompt dynamically from:
+  1. Business identity (name, services, tone, business category/domain)
+  2. Retrieved knowledge base context (RAG results)
+  3. Available actions the chatbot can perform
+  4. Domain boundaries and topic scope (configurable per business)
+  5. Three-tier response rules:
+     - **Tier 1 (KB match):** Answer from knowledge base context — grounded, highest confidence
+     - **Tier 2 (Domain-relevant, no KB match):** Answer using general LLM knowledge within the business domain, delivered in the same tone and personality as Tier 1 — no hedging or "generally speaking" prefixes (e.g., a dental office chatbot confidently explains what a root canal is even without a KB entry). The chatbot does **not** proactively suggest actions — it answers the question and waits for the visitor to ask for anything further.
+     - **Tier 3 (Off-topic):** Politely decline and redirect to the business's services (e.g., "Who won the Super Bowl?" → "I'm here to help with dental questions! Is there anything about our services I can help with?")
+  6. Guardrails: never fabricate business-specific claims (e.g., don't invent pricing or staff names)
+  7. Chatbot personality injection (tone, formality, name/persona, greeting style, emoji usage, verbosity) — applies to all tiers uniformly
+
+**`src/content/knowledge-base.ts`:**
+- Default knowledge base for kAyphI's own site (seeded from landing page content: services, pricing, process, FAQ, case studies)
+- Used to populate the `knowledge_base` table on first deployment
+
+**Database — `knowledge_base` table:**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| user_id | uuid | FK to profiles (business owner) |
+| title | text | Document/chunk title |
+| content | text | Raw text content |
+| embedding | vector(1536) | OpenAI text-embedding-3-small output |
+| source | text | Origin (e.g., "landing-page", "uploaded", "manual") |
+| metadata | jsonb | Extra info (section, URL, date, etc.) |
+| created_at | timestamptz | |
+| updated_at | timestamptz | |
+
+RLS: public SELECT (chatbot retrieval), owner INSERT/UPDATE/DELETE.
+
+### E.2b: Chatbot Personality System
+
+Each chatbot deployment has a **configurable personality** that governs all communication — Tier 1 KB answers, Tier 2 domain answers, and Tier 3 off-topic declines. The chatbot always speaks as the business, in the configured tone.
+
+**Personality dimensions (stored in chatbot config, injected into system prompt):**
+
+| Dimension | Options | Default |
+|-----------|---------|---------|
+| Tone | professional, friendly, casual, clinical, warm, authoritative, playful, custom | professional |
+| Formality | formal, semi-formal, casual | semi-formal |
+| Name / persona | any string (e.g., "Luna", "Dr. SmileBot") or none | business name |
+| Greeting style | configurable opening message | "Hi! How can I help you today?" |
+| Emoji usage | on / off / minimal | off |
+| Verbosity | concise / balanced / detailed | balanced |
+
+**Personality presets:** Owners can choose from presets (Professional, Friendly, Casual, Clinical) or customize each dimension independently.
+
+**Implementation:** The personality config is stored in the chatbot settings table and loaded at prompt-build time by `system-prompt.ts`. It translates each dimension into natural language instructions in the system prompt (e.g., "You speak in a warm, friendly tone. You use casual language and occasionally include emojis. Your name is Luna.").
+
+### E.3: Chat API Route (Public)
 
 **`/api/chat/route.ts`:**
-1. **Auth:** Verify session via `getUser()` — reject 401 if invalid
+1. **No auth required** — this is a visitor-facing endpoint
 2. **Validation:** Zod schema for request body:
    - `messages`: array of `{ role, content }` — required
    - `conversation_id`: uuid — optional (creates new if absent)
-3. **Rate limiting:** Token bucket per user (in-memory Map for MVP)
-   - 60 requests per minute per user
+3. **Rate limiting:** Token bucket per IP (in-memory Map for MVP)
+   - 30 requests per minute per IP
    - Return 429 with retry-after header if exceeded
 4. **Input sanitization:** Strip potential injection patterns before sending to OpenAI
-5. **Streaming:** Use Vercel AI SDK `streamText()` for streaming response
-6. **Persistence:** Save user message and assistant response to `messages` table
-7. **Token tracking:** Record `tokens_used` from OpenAI response metadata
+5. **RAG retrieval:** Embed user message → query knowledge_base for top-K chunks → inject into system prompt
+6. **Streaming:** Use Vercel AI SDK `streamText()` for streaming response
+7. **Action detection:** Parse assistant response for action intents (booking, contact, navigation)
+8. **Persistence:** Save visitor message and assistant response to `messages` table
+9. **Token tracking:** Record `tokens_used` from OpenAI response metadata
+10. **Analytics:** Log `chat.message_sent` event
 
-### Chat UI
+### E.4: Chatbot Admin API (Protected)
+
+**`/api/chat/admin/route.ts`:**
+- `GET` — retrieve chatbot configuration (system prompt overrides, model, behavior settings)
+- `POST/PATCH` — update chatbot configuration
+- Auth required via `getUser()`
+
+### E.5: Action System (Page-Aware + Extensible)
+
+**`src/lib/chatbot/actions.ts`:**
+- Action registry pattern — each action has a name, description, trigger detection, and handler
+- LLM uses function calling or structured output to signal action intent
+- Actions are **page-aware** — the chatbot receives page context and can only execute actions registered for the current page
+- **The chatbot never proactively suggests or offers actions.** It detects intent from the visitor's messages and executes the appropriate action when the visitor asks for it — never unprompted.
+
+**Page context flow:**
+1. Host website calls `window.kayphiChat.setPageContext(...)` with current page type, page data, and available actions
+2. Widget sends page context to `/api/chat` alongside the conversation messages
+3. System prompt includes the available actions for this page — the LLM can only execute what's registered
+4. When the LLM triggers an action, the widget invokes the client-side handler registered by the host page
+
+**Universal actions (available on every page):**
+
+| Action | Trigger | Effect |
+|--------|---------|--------|
+| `book_appointment` | Visitor asks to schedule a call/demo | Surface inline BookingCalendar, create booking via `/api/bookings`, trigger confirmation email workflow |
+| `collect_contact` | Visitor wants to be contacted | Capture name + email, store as lead |
+| `capture_info` | Visitor shares business needs, preferences, or feedback | Store structured data for the business to review/act on later |
+| `navigate` | Visitor asks about a section/page | Navigate to a page or scroll to section |
+
+**Page-specific actions (configured per client site):**
+
+| Page type | Action | Effect |
+|-----------|--------|--------|
+| Product listing | `filter_products` | Apply filters on the product grid |
+| Product detail | `add_to_cart` | Add the current product to cart |
+| Product detail | `check_availability` | Query inventory for size/color/stock |
+| Checkout | `apply_coupon` | Surface or apply a discount code |
+| Dashboard | `run_report` | Trigger a report generation |
+| Blog/article | `find_related` | Surface related content |
+| Healthcare portal | `check_symptoms` | Run symptom checker flow |
+| Restaurant | `place_order` | Start order flow |
+| Real estate | `schedule_viewing` | Book a property viewing |
+
+**Widget JavaScript API (`src/lib/chatbot/widget-api.ts`):**
+```typescript
+interface PageAction {
+  name: string;
+  description: string;       // Included in system prompt so LLM knows what the action does
+  handler: (data: unknown) => void | Promise<void>;  // Runs on host site's JS
+  requiresConfirmation?: boolean;  // Ask visitor before executing
+}
+
+interface PageContext {
+  pageType: string;           // e.g., "product-detail", "checkout", "landing"
+  pageData?: Record<string, unknown>;  // e.g., { productId, productName, price }
+  actions: PageAction[];
+}
+
+window.kayphiChat.setPageContext(context: PageContext): void;
+```
+
+**Dashboard configuration:**
+- Define global actions (available on all pages)
+- Define page-type templates with default actions
+- Custom actions per specific page
+- Action permissions — which actions require visitor confirmation before executing
+
+### E.5b: Information Capture System
+
+The chatbot continuously captures **actionable information** from conversations for the business to act on later:
+
+- **Lead data** — name, email, company, role, expressed needs
+- **Intent signals** — which services the visitor is interested in, budget indicators, timeline
+- **Questions asked** — common visitor questions (reveals knowledge gaps, FAQ opportunities)
+- **Feedback** — complaints, feature requests, product impressions
+- **Conversation summaries** — auto-generated summary of each conversation for quick business review
+
+Captured data is stored as structured `analytics_events` (event_type: `chat.lead_captured`, `chat.info_captured`, `chat.feedback_received`, etc.) and displayed in the dashboard with filtering, search, and export capabilities.
+
+**Future actions (post-MVP):**
+- Lead qualification (BANT questions)
+- Human handoff (live chat escalation)
+- Support ticket creation
+- Trigger automated workflows
+- External calendar sync (Google Calendar, Calendly)
+- CRM sync (push captured leads/info to Salesforce, HubSpot, etc.)
+
+### E.6: Booking System
+
+**`/api/bookings/route.ts`:**
+- `POST` (public) — visitor creates a booking (name, email, date, time, notes)
+- `GET` (auth) — owner views all bookings
+- `PATCH` (auth) — owner confirms/reschedules/cancels
+- `DELETE` (auth) — owner cancels booking
+
+**Database — `bookings` table:**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| user_id | uuid | FK to profiles (business owner receiving the booking) |
+| visitor_name | text | |
+| visitor_email | text | |
+| date | date | Appointment date |
+| time | time | Appointment time |
+| timezone | text | Visitor's timezone |
+| notes | text | Optional context from visitor |
+| status | text | pending/confirmed/cancelled/completed |
+| created_at | timestamptz | |
+
+RLS: public INSERT, owner SELECT/UPDATE/DELETE.
+
+**Confirmation email workflow:**
+When a booking is created via the chatbot's `book_appointment` action, an automated email workflow is triggered:
+1. **Visitor confirmation** — email sent to `visitor_email` confirming the appointment (date, time, business name, any instructions)
+2. **Business notification** — email sent to the business owner alerting them of the new booking
+3. **Reminder** (optional) — scheduled reminder email to visitor before the appointment (e.g., 24 hours prior)
+
+Implementation: The booking API route triggers the email workflow after successful INSERT. For MVP, use a transactional email service (Resend, SendGrid, or Supabase Edge Functions). Email templates are configurable per business in the dashboard.
+
+### E.7: Chat Widget UI (Public — Marketing Site)
+
+**`src/components/chat/ChatWidget.tsx`:**
+- Floating chat bubble (bottom-right corner)
+- Click to expand into a chat panel
+- No auth required — works for any visitor
+- Persists conversation in sessionStorage for page navigation continuity
+
+**`src/components/chat/ChatBubble.tsx`:**
+- Individual message bubble with avatar (bot avatar for assistant, generic for visitor)
+- Typing indicator animation while streaming
+
+**`src/components/chat/ChatInput.tsx`:**
+- Text input with send button
+- Enter to send, Shift+Enter for newline
+- Disabled state while assistant is streaming
+
+**`src/components/chat/BookingCalendar.tsx`:**
+- Inline date/time picker triggered by booking action
+- Shows available slots
+- Submits to `/api/bookings`
+
+### E.8: Voice Mode
+
+The chatbot supports **voice conversations** — visitors speak to it and hear responses in a configurable voice.
+
+**Speech-to-Text (input):**
+- Primary: Browser Web Speech API (`SpeechRecognition`) for zero-latency, zero-cost recognition
+- Fallback/upgrade: OpenAI Whisper API for higher accuracy and broader language support
+- Microphone button in ChatInput toggles voice recording
+- Transcribed text sent as a regular chat message
+
+**Text-to-Speech (output):**
+- OpenAI TTS API (`tts-1` model) with selectable voices (alloy, echo, fable, onyx, nova, shimmer)
+- Business owners configure default voice in dashboard
+- Assistant responses streamed as audio and played inline
+- Optional: display text transcript alongside audio playback
+
+**Components:**
+- `VoiceButton` — microphone toggle in ChatInput (records → transcribes → sends)
+- `AudioPlayer` — inline audio playback for assistant voice responses
+
+**Graceful degradation:** Falls back to text-only if browser lacks Web Speech API support or visitor denies microphone access.
+
+### E.9: Multilingual Support
+
+The chatbot communicates in **multiple languages** — text and voice.
+
+**Auto-detection:**
+- Detect visitor language from their first message (LLM-based detection or lightweight library like `franc`)
+- System prompt instructs LLM to respond in the detected language
+- Knowledge base content is used as-is; the LLM translates at response time
+
+**Optional translated knowledge base:**
+- Business owners can provide knowledge base entries in multiple languages for higher quality
+- Language-tagged entries are preferred when available for the detected language
+
+**Voice language adaptation:**
+- Whisper API supports 50+ languages for speech-to-text
+- TTS voice selection adapts to detected language (language-appropriate voice)
+
+**Language selector widget:**
+- Optional UI dropdown in the chat widget header
+- Visitor can manually override auto-detected language
+- Persisted in sessionStorage for the session
+
+### E.10: Image Capabilities (Three-Tier)
+
+The chatbot supports images in conversations — showing relevant visuals, understanding visitor uploads, and optionally generating images.
+
+**Tier 1 — Stored images (included in base plan):**
+- Business uploads images to the knowledge base (procedure diagrams, product photos, office images)
+- Images stored in Supabase Storage, referenced in `knowledge_base` table with `type: "image"` and metadata (topic, description, alt text)
+- Chatbot retrieves and displays matching images inline when conversation context is relevant
+- Always preferred over generation — zero marginal cost
+- Available to all clients on every plan
+
+**Tier 2 — Vision / image input (paid add-on):**
+- Visitor uploads a photo (e.g., dental patient sends a photo asking "What's wrong?")
+- Image sent to GPT-4o-mini via its built-in vision capability — images converted to tokens, higher per-message cost
+- No separate API call or model switch needed
+- Requires paid add-on — clients who want visitor image uploads pay for the increased token usage
+- Business owners can toggle visitor image uploads on/off
+
+**Tier 3 — Image generation via DALL-E (paid add-on, higher tier than vision):**
+- When no stored image exists and a visual would genuinely help, the chatbot generates one via DALL-E 3
+- Our cost: ~$0.04 (1024x1024 standard) to ~$0.12 (1792x1024 HD) per image
+- Requires paid add-on at a higher pricing tier than vision — per-image cost is passed through or bundled into the plan
+- Business owners configure:
+  - Budget cap: per conversation, daily, or monthly limit
+  - Quality setting: standard vs HD
+
+**Pricing note:** Exact pricing for vision and image generation add-ons is TBD — see pricing research task in `tasks/todo.md`. Factors to determine: markup on OpenAI costs, bundled vs. usage-based pricing, plan tier boundaries.
+
+**Components:**
+- `ImageMessage` — renders inline images in chat (stored or generated), with alt text and optional expand
+- `ImageUpload` — visitor image upload button in ChatInput (drag-drop or file picker)
+
+**Priority logic:** Chatbot always checks for a matching stored image (Tier 1) before falling back to generation (Tier 3). The system prompt instructs the LLM to describe what image it wants to show, and the action system resolves it against the knowledge base first.
+
+### E.11: Dashboard Chat Management (Protected)
 
 **`src/app/(dashboard)/chat/page.tsx`:**
-- Left sidebar: conversation list (create, rename, delete)
-- Main area: message thread with streaming display
-- Bottom: chat input with send button
-- Real-time updates via Supabase subscriptions (multi-tab sync)
-
-### Components
-- `ChatMessage` — renders user/assistant messages with avatar and timestamp
-- `ChatInput` — textarea with send button, Enter to send, Shift+Enter for newline
-- `ConversationList` — sidebar list with active state, rename, delete actions
+- View all visitor conversations (read-only)
+- Knowledge base editor — add/edit/delete knowledge base documents and images
+- Chatbot configuration:
+  - **Personality** — preset selection (Professional, Friendly, Casual, Clinical) or custom per-dimension config (tone, formality, name/persona, greeting, emoji usage, verbosity)
+  - System prompt overrides
+  - Model selection
+  - Voice selection (TTS voice)
+  - Language settings (default language, auto-detect toggle)
+  - **Business domain / category** (e.g., "dental office", "AI automation agency") — defines Tier 2 response topic boundaries
+  - **Domain keywords** — additional topic areas the chatbot should treat as in-scope
+  - **Tier 2 response toggle** — enable/disable general domain answers (some businesses may prefer strict KB-only)
+  - **Vision toggle** — enable/disable visitor image uploads
+  - **Image generation toggle** — enable/disable DALL-E generation + budget cap settings
+- Preview panel — test the chatbot with current personality, knowledge base, domain config, and image behavior
 
 ---
 
@@ -363,8 +655,14 @@ export async function trackEvent(
 ```
 
 Auto-tracked events:
-- `chat.message_sent` — when user sends a chat message
-- `chat.conversation_created` — when a new conversation starts
+- `chat.message_sent` — when a visitor sends a chat message
+- `chat.conversation_created` — when a new visitor conversation starts
+- `chat.lead_captured` — when visitor provides contact info (name, email, company)
+- `chat.info_captured` — when visitor shares business needs, preferences, or actionable details
+- `chat.feedback_received` — when visitor provides feedback or feature requests
+- `chat.booking_created` — when a booking is made through the chatbot
+- `chat.voice_used` — when visitor uses voice mode
+- `chat.language_detected` — when a non-default language is detected
 - `workflow.run_started` — when a workflow execution begins
 - `workflow.run_completed` — when a workflow succeeds
 - `workflow.run_failed` — when a workflow fails
@@ -412,17 +710,32 @@ Auto-tracked events:
 | `src/app/(auth)/callback/route.ts` | C | OAuth callback |
 | `src/app/(dashboard)/layout.tsx` | D | Dashboard shell |
 | `src/app/(dashboard)/page.tsx` | D | Dashboard overview |
-| `src/app/(dashboard)/chat/page.tsx` | E | Chat interface |
+| `src/app/(dashboard)/chat/page.tsx` | E | Chat management (knowledge base, config, conversation viewer) |
 | `src/app/(dashboard)/workflows/page.tsx` | F | Workflow builder |
 | `src/app/(dashboard)/analytics/page.tsx` | G | Analytics dashboard |
 | `src/app/(dashboard)/settings/page.tsx` | D | Settings page |
-| `src/app/api/chat/route.ts` | E | Chat API |
+| `src/app/api/chat/route.ts` | E | Public chatbot API (no auth, visitor-facing) |
+| `src/app/api/chat/admin/route.ts` | E | Chatbot config management (auth required) |
+| `src/app/api/bookings/route.ts` | E | Appointment booking CRUD (public POST, auth for management) |
+| `src/app/api/knowledge/route.ts` | E | Knowledge base document CRUD (auth required) |
 | `src/app/api/workflows/route.ts` | F | Workflow CRUD API |
 | `src/app/api/workflows/run/route.ts` | F | Workflow execution API |
 | `src/app/api/analytics/route.ts` | G | Analytics API |
 | `src/lib/openai/client.ts` | E | OpenAI client |
+| `src/lib/chatbot/knowledge.ts` | E | Knowledge base retrieval (RAG pipeline) |
+| `src/lib/chatbot/actions.ts` | E | Extensible action registry (booking, contact, navigate) |
+| `src/lib/chatbot/system-prompt.ts` | E | Dynamic system prompt builder |
+| `src/content/knowledge-base.ts` | E | Default kAyphI knowledge base seed data |
+| `src/components/chat/ChatWidget.tsx` | E | Floating chat widget (public, marketing site) |
+| `src/components/chat/ChatBubble.tsx` | E | Message bubble component |
+| `src/components/chat/ChatInput.tsx` | E | Chat text input with send button |
+| `src/components/chat/BookingCalendar.tsx` | E | Inline appointment picker |
+| `src/components/chat/VoiceButton.tsx` | E | Microphone toggle for voice input |
+| `src/components/chat/AudioPlayer.tsx` | E | Inline audio playback for voice responses |
+| `src/components/chat/ImageMessage.tsx` | E | Inline image display (stored or generated) |
+| `src/components/chat/ImageUpload.tsx` | E | Visitor image upload (drag-drop / file picker) |
 | `src/lib/analytics/track.ts` | G | Event tracking |
-| `supabase/migrations/*.sql` | B | Database schema |
+| `supabase/migrations/*.sql` | B | Database schema (8 migrations) |
 | `Dockerfile` | B | Container config |
 | `docker-compose.yml` | B | Local dev stack |
 | `.env.example` | B | Environment template |
@@ -432,7 +745,7 @@ Auto-tracked events:
 | File | Phase | Change |
 |------|-------|--------|
 | `src/content/landing.ts` | A | Add Comparison + Team content types and data |
-| `src/app/page.tsx` | A | Add Comparison + Team sections to composition |
+| `src/app/page.tsx` | A/E | Add Comparison + Team sections; add ChatWidget to layout |
 | `src/components/sections/FAQSection.tsx` | A | Add accordion animation |
 | `src/components/layout/TopNav.tsx` | A | Add scroll hide/show |
 | `src/components/ui/ActionButton.tsx` | A | Add arrow icons |
@@ -443,4 +756,4 @@ Auto-tracked events:
 | `package.json` | B | Add dependencies, upgrade Next.js |
 | `tailwind.config.ts` | B/D | Add dashboard colors |
 | `next.config.mjs` | B | Update for Next.js 15 |
-| `src/app/layout.tsx` | B | Update metadata, add providers if needed |
+| `src/app/layout.tsx` | B/E | Update metadata, add providers, mount ChatWidget globally |

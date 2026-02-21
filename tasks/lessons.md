@@ -40,3 +40,14 @@ When a component applies base classes (e.g., `max-w-6xl px-6`) and accepts a `cl
 
 ### Test queries must account for new sections adding duplicate headings
 Adding ComparisonSection introduced a second heading containing "kAyphI", which broke `getByRole("heading", { name: "kAyphI" })`. When adding new sections, check if any heading text duplicates existing headings and update tests to use `getAllByRole(...)[0]` or more specific selectors.
+
+## 2026-02-21: Product Identity Correction
+
+### Documentation must reflect the actual product vision, not inherited reference assumptions
+The original codebase was rebuilt from an "OrbAI" reference video, and the docs (ARCHITECTURE.md, DESIGN.md, product plan) inherited OrbAI's generic SaaS chatbot architecture. The actual product is **kAyphI** — an AI automation company whose core chatbot product is a public-facing, knowledge-base-powered widget with voice mode, multilingual support, and action execution (booking, lead capture). Always confirm the product owner's vision before documenting architecture. Do not assume the reference design's product model is the intended product model.
+
+### Chatbot architecture must distinguish public vs. authenticated access patterns
+The original Phase E described all chatbot features behind authentication. The actual requirement is a public-facing chatbot widget (no login for visitors) + a protected dashboard for business owners. When designing API routes, explicitly categorize them as public (IP rate-limited) or protected (auth-required) from the start.
+
+### Update brand name across ALL files when rebranding, not just user-facing content
+Changing the brand name in `landing.ts` but leaving "OrbAI" in ARCHITECTURE.md, DESIGN.md, package.json, and package-lock.json created a misleading divergence. When rebranding, use project-wide search to find all references.

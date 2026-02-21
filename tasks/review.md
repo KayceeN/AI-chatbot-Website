@@ -1,7 +1,7 @@
 # Rebuild Review
 
 ## Objective
-Recreate the recorded OrbAI website style from scratch with same copy hierarchy, section order, and animation feel.
+Recreate the recorded reference website style from scratch with same copy hierarchy, section order, and animation feel. (Original reference was "OrbAI"; product is now branded as kAyphI.)
 
 ## Delivered
 - Next.js App Router site with a single `/` route.

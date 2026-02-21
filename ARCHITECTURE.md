@@ -1,6 +1,8 @@
 # ARCHITECTURE.md — System Architecture
 
-This document describes the actual project structure and planned extensions for OrbAI.
+This document describes the actual project structure and planned extensions for kAyphI.
+
+**Product identity:** kAyphI is an AI automation company that provides businesses with four core services: AI Strategy Consulting, Content Generation, AI-Powered Chatbots, and Automated Workflows. The kAyphI website serves dual purposes — it is the company's marketing site and a live demonstration of the product suite. A public-facing chatbot widget on the site answers visitor questions using a business knowledge base and can perform actions like booking appointments. This chatbot is both a real tool for kAyphI's own visitors and a showcase of what kAyphI builds for its clients.
 
 For visual design decisions, see [DESIGN.md](DESIGN.md).
 For the full product roadmap, see [docs/plans/2026-02-14-full-product-plan.md](docs/plans/2026-02-14-full-product-plan.md).
@@ -96,12 +98,15 @@ src/
 │   ├── (dashboard)/
 │   │   ├── layout.tsx                  # Dashboard shell (sidebar nav)
 │   │   ├── page.tsx                    # Dashboard overview
-│   │   ├── chat/page.tsx               # AI chatbot interface
+│   │   ├── chat/page.tsx               # Chatbot management (knowledge base, config)
 │   │   ├── workflows/page.tsx          # Workflow builder + list
 │   │   ├── analytics/page.tsx          # Analytics dashboard
 │   │   └── settings/page.tsx           # Profile settings
 │   ├── api/
-│   │   ├── chat/route.ts              # OpenAI streaming chat
+│   │   ├── chat/route.ts              # Public chatbot endpoint (no auth — visitor-facing)
+│   │   ├── chat/admin/route.ts        # Chatbot config management (auth required)
+│   │   ├── bookings/route.ts          # Appointment booking CRUD
+│   │   ├── knowledge/route.ts         # Knowledge base CRUD (auth required)
 │   │   ├── workflows/route.ts         # Workflow CRUD
 │   │   ├── workflows/run/route.ts     # Workflow execution
 │   │   └── analytics/route.ts         # Analytics queries
@@ -113,17 +118,22 @@ src/
 │   │   └── DashboardSidebar.tsx
 │   ├── sections/                       # Marketing sections (unchanged)
 │   │   └── ...
+│   ├── chat/                           # Public chatbot widget components
+│   │   ├── ChatWidget.tsx              # Floating bubble + expandable panel
+│   │   ├── ChatBubble.tsx              # Individual message bubble
+│   │   ├── ChatInput.tsx               # Text input with send button
+│   │   └── BookingCalendar.tsx         # Inline appointment picker
 │   ├── ui/                             # Shared primitives (existing + shadcn/ui)
 │   │   └── ...
 │   ├── dashboard/                      # Dashboard-specific components
 │   │   ├── StatCard.tsx
-│   │   ├── ChatMessage.tsx
-│   │   ├── ChatInput.tsx
+│   │   ├── KnowledgeBaseEditor.tsx     # Upload/manage knowledge base content
 │   │   └── WorkflowStep.tsx
 │   └── forms/                          # RHF + Zod form components
 │       └── ...
 ├── content/
-│   └── landing.ts
+│   ├── landing.ts                      # Marketing page content
+│   └── knowledge-base.ts              # Default kAyphI knowledge base (own site demo)
 ├── lib/
 │   ├── motion.ts
 │   ├── utils.ts
@@ -132,6 +142,10 @@ src/
 │   │   └── server.ts                   # Server client (service role)
 │   ├── openai/
 │   │   └── client.ts                   # OpenAI client configuration
+│   ├── chatbot/
+│   │   ├── knowledge.ts               # Knowledge base retrieval (RAG pipeline)
+│   │   ├── actions.ts                  # Extensible action registry (booking, etc.)
+│   │   └── system-prompt.ts           # System prompt builder from knowledge base
 │   └── analytics/
 │       └── track.ts                    # Event logging utility
 ├── middleware.ts                        # Auth route protection
@@ -143,9 +157,11 @@ supabase/
     ├── 001_create_profiles.sql
     ├── 002_create_conversations.sql
     ├── 003_create_messages.sql
-    ├── 004_create_workflows.sql
-    ├── 005_create_workflow_runs.sql
-    └── 006_create_analytics_events.sql
+    ├── 004_create_knowledge_base.sql   # Knowledge base documents + embeddings
+    ├── 005_create_bookings.sql         # Appointment bookings
+    ├── 006_create_workflows.sql
+    ├── 007_create_workflow_runs.sql
+    └── 008_create_analytics_events.sql
 ```
 
 ---
@@ -269,13 +285,17 @@ API routes (additional layer)
 
 ## Database Schema (Planned)
 
-Six tables, all with RLS enabled:
+Eight tables, all with RLS enabled:
 
 ```
 profiles (extends auth.users)
     │
-    ├── conversations (1:many)
+    ├── knowledge_base (1:many)         # Business knowledge documents + embeddings
+    │
+    ├── conversations (1:many)          # Visitor chat sessions (public, no auth)
     │   └── messages (1:many)
+    │
+    ├── bookings (1:many)               # Appointment bookings from chatbot or /book page
     │
     ├── workflows (1:many)
     │   └── workflow_runs (1:many)
@@ -283,7 +303,10 @@ profiles (extends auth.users)
     └── analytics_events (1:many)
 ```
 
-**RLS policy:** Every table enforces `auth.uid() = user_id` for all operations. Users can only CRUD their own rows.
+**RLS policy:** Most tables enforce `auth.uid() = user_id` for owner operations. Exceptions:
+- `conversations` and `messages` — public INSERT allowed (visitor chats), owner SELECT/UPDATE/DELETE
+- `knowledge_base` — public SELECT for chatbot retrieval, owner INSERT/UPDATE/DELETE
+- `bookings` — public INSERT (visitors book), owner SELECT/UPDATE/DELETE
 
 See [docs/plans/2026-02-14-ai-chatbot-website-design.md](docs/plans/2026-02-14-ai-chatbot-website-design.md) for full column definitions.
 
@@ -291,21 +314,264 @@ See [docs/plans/2026-02-14-ai-chatbot-website-design.md](docs/plans/2026-02-14-a
 
 ## API Architecture (Planned)
 
-All API routes follow a consistent pattern:
+API routes follow two patterns — **public** (visitor-facing, no auth) and **protected** (dashboard, auth required):
 
+**Public routes (rate-limited by IP):**
 ```
-1. Verify auth (getUser() — reject if no valid session)
-2. Validate input (Zod schema — reject with 400 if invalid)
+1. Validate input (Zod schema — reject with 400 if invalid)
+2. Rate limit by IP (token bucket)
 3. Execute business logic
 4. Return typed response (or stream for chat)
 ```
 
+**Protected routes (rate-limited by user):**
+```
+1. Verify auth (getUser() — reject if no valid session)
+2. Validate input (Zod schema — reject with 400 if invalid)
+3. Execute business logic
+4. Return typed response
+```
+
 | Endpoint | Method | Auth | Rate limited | Description |
 |----------|--------|------|-------------|-------------|
-| `/api/chat` | POST | Yes | Yes (token bucket) | Stream OpenAI response |
+| `/api/chat` | POST | **No** (public) | Yes (IP-based) | Public chatbot — streams knowledge-base-powered response to visitors |
+| `/api/chat/admin` | GET/POST/PATCH | Yes | No | Chatbot configuration (system prompt, model, behavior) |
+| `/api/bookings` | GET/POST/PATCH/DELETE | POST: **No** (public), others: Yes | Yes (IP for public) | Appointment scheduling — visitors create, owners manage |
+| `/api/knowledge` | GET/POST/PATCH/DELETE | Yes | No | Knowledge base document CRUD |
 | `/api/workflows` | GET/POST/PATCH/DELETE | Yes | No | Workflow CRUD |
 | `/api/workflows/run` | POST | Yes | Yes | Execute workflow (idempotent) |
 | `/api/analytics` | GET | Yes | No | Query analytics events |
+
+---
+
+## Chatbot Architecture (Planned)
+
+The chatbot is kAyphI's core product — a public-facing AI assistant embedded on the marketing site as a floating widget. It requires **no login** from visitors.
+
+### How It Works
+
+```
+Visitor opens site
+    │
+    ▼
+ChatWidget (floating bubble, bottom-right)
+    │ visitor clicks bubble
+    ▼
+Chat panel expands
+    │ visitor types question
+    ▼
+POST /api/chat
+    │
+    ├── 1. Rate limit check (IP-based token bucket)
+    ├── 2. Input validation (Zod)
+    ├── 3. Retrieve relevant knowledge base chunks (embedding similarity search)
+    ├── 4. Build system prompt (business identity + retrieved context)
+    ├── 5. Stream response via Vercel AI SDK + OpenAI
+    ├── 6. Detect action intents (booking, contact, etc.)
+    │   └── If visitor requests booking → present BookingCalendar inline
+    ├── 7. Persist conversation + messages to Supabase
+    └── 8. Log analytics event
+```
+
+### Knowledge Base
+
+The chatbot's intelligence comes from a **business knowledge base** — structured content about the company's services, pricing, process, FAQ, case studies, and policies. For kAyphI's own site, this is seeded from the landing page content and supplemented with additional business details.
+
+**Storage:** `knowledge_base` table with document chunks + vector embeddings (pgvector via Supabase).
+
+**Retrieval:** On each user message, the top-K most relevant chunks are retrieved by embedding similarity and injected into the system prompt as context (RAG pattern).
+
+**Management:** Business owners manage their knowledge base through the dashboard (`/chat` page in the dashboard) — upload documents, edit entries, preview chatbot responses.
+
+### Response Behavior (Three-Tier)
+
+The chatbot uses a **domain-aware** response strategy, not a strict knowledge-base-only filter. The business domain is defined by the knowledge base content and the business category (e.g., "dental office", "AI automation agency").
+
+| Tier | Condition | Behavior | Example |
+|------|-----------|----------|---------|
+| **1. Knowledge base match** | Question matches knowledge base content | Answer from retrieved knowledge base context (grounded, highest confidence) | "What are your pricing plans?" → answer from pricing KB entries |
+| **2. Domain-relevant, no KB match** | Question is within the business domain but not covered by the knowledge base | Answer using LLM general knowledge, clearly framed as general information (not specific to the business) | Dental office chatbot: "What is a root canal?" → explain the procedure using general dental knowledge |
+| **3. Off-topic** | Question is outside the business domain entirely | Politely decline and redirect to the business's services | Dental office chatbot: "Who won the Super Bowl?" → "I'm here to help with dental questions! Is there anything about our services I can assist with?" |
+
+**How domain relevance is determined:**
+- The system prompt defines the business category and domain boundaries (e.g., "You are a chatbot for a dental office. You can answer general dentistry questions even if they are not in the knowledge base.")
+- The business owner can configure domain keywords and topic boundaries in the dashboard
+- The LLM uses its understanding of the business category to classify questions as in-domain or off-topic
+
+**Tier 2 behavior:**
+- Tier 2 answers are delivered in the **same tone and personality** as Tier 1 — no hedging, no "generally speaking" prefixes. The chatbot speaks as the business, maintaining the configured personality at all times.
+- The chatbot does **not** proactively suggest actions (e.g., it never unprompted says "Would you like to book a consultation?"). It simply answers the question in the business's voice and waits for the visitor to ask for anything further.
+- Business owners can toggle Tier 2 on/off in the dashboard (some may prefer strict KB-only answers)
+
+### Chatbot Personality
+
+Each chatbot deployment has a **configurable personality** that defines how it communicates. The personality applies to all responses — Tier 1, Tier 2, and Tier 3 declines.
+
+**Personality dimensions (configured by the business owner):**
+- **Tone** — professional, friendly, casual, clinical, warm, authoritative, playful, etc.
+- **Formality level** — formal ("We would be happy to assist you") vs. casual ("Sure thing! Here's what you need to know")
+- **Name / persona** — the chatbot can have a name (e.g., "Luna", "Dr. SmileBot", "Alex") and refer to itself by that name
+- **Greeting style** — how it opens conversations ("Hi! How can I help?" vs. "Welcome to [Business]. What can I assist you with today?")
+- **Emoji usage** — on/off, with configurable frequency
+- **Verbosity** — concise (short direct answers) vs. detailed (thorough explanations)
+
+**Personality presets:** Business owners can choose from presets (Professional, Friendly, Casual, Clinical) or fully customize each dimension. The personality is injected into the system prompt and governs all LLM output.
+
+**Examples of the same answer in different personalities:**
+
+| Personality | Response to "What is a root canal?" |
+|------------|--------------------------------------|
+| Clinical (dental office) | "A root canal is a procedure to repair and save a tooth that is badly decayed or infected. The procedure involves removing the damaged pulp, cleaning the inside of the tooth, and sealing it. If you have any other dental questions, feel free to ask." |
+| Friendly (dental office) | "Great question! A root canal is basically how we save a tooth that's been damaged or infected. We clean out the inside, fix it up, and seal it so it's good as new. Nothing to worry about! Let me know if you have any other questions." |
+| Playful (dental office) | "Ah, root canals! They sound scary but they're actually tooth-savers! Think of it as a deep clean for the inside of your tooth. We remove the ouchie parts, fix everything up, and seal it tight. Anything else on your mind?" |
+
+### Action System (Page-Aware + Extensible)
+
+The chatbot can perform actions beyond answering questions. Actions are **page-aware** — the chatbot knows what page the visitor is on and what functionality is available, and can execute actions relevant to the current context when the visitor's intent calls for it.
+
+**Behavioral rule:** The chatbot **never proactively suggests or offers actions**. It responds to whatever the visitor asks and silently determines whether an action should be executed based on the visitor's intent. For example, if a visitor says "I'd like to book an appointment," the chatbot initiates the booking flow. But it never unprompted says "Would you like to book an appointment?" or pushes action suggestions.
+
+**How page awareness works:**
+```
+Visitor is on a page
+    │
+    ▼
+ChatWidget receives page context from the host page:
+    ├── current URL / route
+    ├── page type (e.g., "product-listing", "checkout", "landing", "blog")
+    ├── available actions for this page (registered by the host site)
+    └── page-specific data (e.g., product ID, cart contents, article title)
+    │
+    ▼
+System prompt is built with:
+    ├── business knowledge base (always)
+    ├── page context (current page type + available actions)
+    └── page-specific data (what the visitor is looking at)
+```
+
+The host website registers available actions per page via the widget's JavaScript API. The chatbot can only execute actions that are registered for the current page — it never fabricates or assumes actions that aren't registered.
+
+**Universal actions (available on every page):**
+| Action | Trigger | Effect |
+|--------|---------|--------|
+| `book_appointment` | Visitor asks to schedule a call/demo | Surface inline calendar, create booking, trigger confirmation email workflow |
+| `collect_contact` | Visitor wants to be contacted | Capture name + email, store as lead |
+| `capture_info` | Visitor shares business needs, preferences, or feedback | Store structured data for the business to review/act on later |
+| `navigate` | Visitor asks about a section/page | Navigate to the relevant page or scroll to section |
+
+**Page-specific action examples (configured per client site):**
+
+| Page type | Action | Trigger | Effect |
+|-----------|--------|---------|--------|
+| Product listing | `filter_products` | "Show me red dresses under $50" | Apply filters on the product grid |
+| Product detail | `add_to_cart` | "Add this to my cart" | Add the current product to cart |
+| Product detail | `check_availability` | "Is this in stock in size M?" | Query inventory and respond |
+| Checkout | `apply_coupon` | "Do you have any discount codes?" | Surface available coupons or apply one |
+| Dashboard | `run_report` | "Show me last month's sales" | Trigger a report generation |
+| Blog/article | `find_related` | "Do you have more articles about this?" | Surface related content |
+| Healthcare portal | `check_symptoms` | "I've had a headache for 3 days" | Run symptom checker flow |
+| Restaurant | `place_order` | "I'd like to order a large pepperoni pizza" | Start order flow |
+| Real estate | `schedule_viewing` | "Can I see this property Saturday?" | Book a property viewing |
+
+**Widget JavaScript API for registering page actions:**
+```javascript
+// Host site registers actions available on the current page
+window.kayphiChat.setPageContext({
+  pageType: "product-detail",
+  pageData: { productId: "SKU-123", productName: "Running Shoes", price: 89.99 },
+  actions: [
+    { name: "add_to_cart", description: "Add this product to the visitor's cart", handler: (data) => addToCart(data.productId) },
+    { name: "check_availability", description: "Check stock for a size/color", handler: (data) => checkStock(data) },
+    { name: "notify_restock", description: "Sign up for restock notification", handler: (data) => notifyRestock(data) }
+  ]
+});
+```
+
+The chatbot receives these registered actions in its system prompt and can invoke them via function calling. The handler runs on the client side (host website's JavaScript), so the chatbot can interact with any page functionality the host site exposes.
+
+**Business owner configuration (dashboard):**
+- Define global actions (available on all pages)
+- Define page-type templates with default actions (e.g., "all product pages get add_to_cart")
+- Custom actions per specific page (e.g., "the pricing page gets compare_plans")
+- Action permissions — which actions require visitor confirmation before executing
+
+### Information Capture
+
+Beyond direct actions, the chatbot continuously **captures actionable information** from conversations for the business to act on later:
+
+- **Lead data** — name, email, company, role, expressed needs
+- **Intent signals** — which services the visitor is interested in, budget indicators, timeline
+- **Questions asked** — common questions reveal knowledge gaps or new FAQ opportunities
+- **Feedback** — complaints, feature requests, product impressions
+- **Conversation summaries** — auto-generated summary of each conversation for quick review
+
+This data is stored in the `analytics_events` table (structured) and viewable in the dashboard. Business owners can filter, search, and export captured information.
+
+**Future actions (extensible):**
+- Qualify leads (BANT questions)
+- Hand off to human support
+- Submit support tickets
+- Trigger workflows
+- Integration with external calendars (Google Calendar, Calendly)
+- CRM sync (push captured leads/info to Salesforce, HubSpot, etc.)
+
+### Voice Mode
+
+The chatbot supports **voice conversations** — visitors can speak to it and hear responses read back in a selected voice.
+
+**Speech-to-Text (input):** Browser Web Speech API (`SpeechRecognition`) or OpenAI Whisper API for higher accuracy. Visitor taps a microphone button to start speaking; transcribed text is sent as a regular chat message.
+
+**Text-to-Speech (output):** OpenAI TTS API (`tts-1` model) with selectable voices. Assistant responses are converted to audio and played back inline. Business owners can configure the default voice in the dashboard.
+
+**Fallback:** If the browser does not support Web Speech API or the visitor denies microphone access, the widget gracefully falls back to text-only mode.
+
+### Multilingual Support
+
+The chatbot can communicate in **multiple languages** — both text and voice.
+
+**Language detection:** Auto-detect the visitor's language from their first message (via the LLM or a lightweight detection library). Respond in the same language.
+
+**Knowledge base translation:** The system prompt instructs the LLM to answer in the visitor's language using the knowledge base content (which may be in English). For higher quality, business owners can optionally provide translated knowledge base entries.
+
+**Voice language:** Speech-to-text and text-to-speech adapt to the detected language. OpenAI Whisper supports 50+ languages; TTS voices are selected per language.
+
+**Language selector:** Optional widget UI element letting visitors manually choose their preferred language.
+
+### Image Capabilities (Three-Tier)
+
+The chatbot supports images in conversations — showing relevant visuals, understanding visitor-uploaded photos, and optionally generating images on demand.
+
+| Tier | Capability | Pricing | How it works |
+|------|-----------|---------|-------------|
+| **1. Stored images** | Serve images from the knowledge base | **Included in base plan** — static file serving, no LLM cost | Business uploads images (procedure diagrams, product photos, office images) as knowledge base entries. Chatbot displays them when the conversation context matches. |
+| **2. Vision (image input)** | Understand images visitors send | **Paid add-on** — uses GPT-4o-mini vision tokens | Visitor uploads a photo (e.g., "What's wrong with my tooth?"). The model analyzes it using its built-in vision capability. Higher token usage per message. |
+| **3. Image generation** | Generate new images on the fly via DALL-E | **Paid add-on (higher tier)** — ~$0.04–0.12 per image (DALL-E 3) | When no stored image exists and a visual would help, the chatbot generates one. Per-image cost passed through or bundled into plan pricing. |
+
+**Pricing model:** Stored images (Tier 1) are included in every plan. Vision (Tier 2) and image generation (Tier 3) are paid add-ons that clients opt into at higher pricing tiers. See the pricing research task in `tasks/todo.md` for the full pricing strategy work.
+
+**Priority order:** The chatbot always prefers Tier 1 (stored) over Tier 3 (generated). If a relevant image exists in the knowledge base, it is served directly. Generation is a fallback for when no stored image fits.
+
+**Knowledge base images:**
+- Stored in the `knowledge_base` table with `type: "image"` and a reference to the file in object storage (Supabase Storage)
+- Tagged with metadata (topic, description, alt text) for retrieval matching
+- Business owners upload and manage images through the dashboard knowledge base editor
+
+**Dashboard controls:**
+- Upload/manage stored images in the knowledge base (all plans)
+- Vision toggle — enable/disable visitor image uploads (requires paid add-on)
+- Image generation toggle — enable/disable DALL-E generation (requires paid add-on)
+- Budget cap for image generation (per conversation, daily, or monthly)
+
+### What kAyphI Sells to Clients
+
+The same chatbot architecture is the product kAyphI offers to other businesses:
+1. **Custom knowledge base** — built from the client's website, docs, and business info (text + images)
+2. **Embeddable widget** — drop-in script tag for any website
+3. **Voice mode** — visitors can speak to the chatbot and hear responses in a configurable voice
+4. **Multilingual** — auto-detects visitor language, responds in kind (text + voice)
+5. **Image support** — serve stored images, understand visitor photos (vision), optionally generate images (DALL-E)
+6. **Action configuration** — booking, lead capture, and custom actions per client
+7. **Analytics dashboard** — conversation insights, common questions, conversion tracking
 
 ---
 
@@ -385,8 +651,9 @@ OPENAI_API_KEY=<your-openai-key>
 
 ## Invariants
 
-1. **Auth before data.** No API route processes requests without verifying auth via `getUser()`.
-2. **RLS always on.** Every user-facing table has row-level security. No `service_role` queries in user-facing code.
+1. **Auth before data (protected routes).** All dashboard/admin API routes verify auth via `getUser()`. Public routes (`/api/chat`, `POST /api/bookings`) use IP-based rate limiting instead.
+2. **RLS always on.** Every table has row-level security. Public tables allow constrained public access (INSERT for visitor chats/bookings, SELECT for knowledge retrieval). No `service_role` queries in user-facing code.
 3. **Typed content.** All marketing copy flows through `LandingPageContent` — no hardcoded strings in components.
 4. **Component composition.** Sections compose primitives (`GlassCard`, `SectionShell`, etc.) — no one-off styling.
 5. **Server-only secrets.** `SUPABASE_SERVICE_ROLE_KEY` and `OPENAI_API_KEY` never appear in client bundles.
+6. **Domain-aware responses.** The chatbot answers from knowledge base context (Tier 1), general domain knowledge in the business's own personality and tone (Tier 2), or politely declines off-topic questions (Tier 3). It never fabricates business-specific claims (e.g., inventing pricing, staff names, or policies not in the KB).

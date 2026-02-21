@@ -101,10 +101,14 @@ Prioritized by recommended implementation order. Based on deep research of top A
 - [ ] Update copyright from "Designed by FrameBase" to kAyphI branding
 - [ ] Fix FAQ email fallback (`kayphi@support.com`) — verify or update
 
-### Step 8: Live AI Chatbot Widget
-- [ ] Deploy floating chatbot widget on homepage (depends on Phase E chatbot build)
-- [ ] Chatbot answers FAQs, qualifies leads (BANT), and hands off to booking flow
-- [ ] "See how this was built" CTA from chatbot to product tour
+### Step 8: Live AI Chatbot Widget (Depends on Phase E)
+- [ ] Deploy floating `ChatWidget` on marketing site (public, no auth)
+- [ ] Chatbot answers visitor questions from kAyphI knowledge base (services, pricing, process, FAQ)
+- [ ] Voice mode — visitors can speak and hear responses in configurable voice
+- [ ] Multilingual — auto-detect language, respond in kind
+- [ ] Book appointment action — inline calendar from chatbot conversation
+- [ ] Lead capture action — collect name/email when visitor expresses interest
+- [ ] "See how this was built" CTA — link to product demo/tour
 
 ### Step 9: Blog Infrastructure
 - [ ] Set up MDX-based blog in Next.js (`/blog` route)
@@ -172,6 +176,36 @@ Prioritized by recommended implementation order. Based on deep research of top A
 
 ---
 
+## Pricing Research (Pre-Launch — Required Before Phase E Deployment)
+
+Research and define pricing strategy for kAyphI's chatbot product and all add-on capabilities. This determines how the product is packaged and sold.
+
+### Chatbot Product Pricing
+- [ ] Research competitor pricing (Intercom, Drift, Tidio, Chatbase, CustomGPT, etc.)
+- [ ] Define base chatbot plan tiers — what's included at each level (message limits, KB size, conversations/month)
+- [ ] Price the base chatbot plans (Starter, Pro, Enterprise or similar)
+- [ ] Determine pricing model: flat monthly fee vs. usage-based vs. hybrid
+
+### Feature Add-On Pricing
+- [ ] **Voice mode** — price as add-on or include in higher tiers? Cost factors: Whisper API (~$0.006/min), TTS API (~$0.015/1K chars)
+- [ ] **Multilingual** — included or add-on? Cost factors: slightly higher token usage for translation instructions
+- [ ] **Vision (image input)** — price as paid add-on. Cost factors: higher token usage per vision message (~4x text)
+- [ ] **Image generation (DALL-E)** — price as paid add-on (higher tier than vision). Cost factors: ~$0.04–0.12 per generated image
+- [ ] **Booking system** — included or add-on? Cost factors: minimal (DB storage only)
+- [ ] **Information capture / lead extraction** — included or add-on?
+- [ ] **Custom personality** — included or premium-only?
+- [ ] **Custom actions (beyond defaults)** — included or enterprise-only?
+
+### Pricing Model Decisions
+- [ ] Markup strategy on OpenAI costs — what margin on API pass-through?
+- [ ] Usage-based vs. bundled — do clients pay per message, per image, or get a monthly allocation?
+- [ ] Overage pricing — what happens when a client exceeds their plan limits?
+- [ ] Free tier / trial — offer a limited free chatbot for lead generation?
+- [ ] Annual vs. monthly discount structure
+- [ ] Update landing page pricing section (`src/content/landing.ts`) to reflect final product pricing (currently shows agency service pricing, not chatbot product pricing)
+
+---
+
 ## Phase B: Infrastructure Setup
 - [ ] Upgrade Next.js 14 → 15 (per approved design doc)
 - [ ] Install pre-approved dependencies (Supabase, shadcn/ui, RHF, Zod, Lucide)
@@ -196,13 +230,25 @@ Prioritized by recommended implementation order. Based on deep research of top A
 - [ ] Settings page (profile update form with RHF + Zod validation)
 - [ ] Responsive sidebar (collapsible on mobile)
 
-## Phase E: AI Chatbot
+## Phase E: AI Chatbot (Public-Facing Widget + Knowledge Base + Voice + Multilingual)
 - [ ] OpenAI client (`src/lib/openai/client.ts`)
-- [ ] Vercel AI SDK integration for streaming
-- [ ] `/api/chat/route.ts` — auth, Zod validation, rate limiting, input sanitization
-- [ ] Chat UI — conversation list sidebar, message thread, streaming input
-- [ ] Conversation CRUD with Supabase
-- [ ] Message persistence (role, content, tokens_used)
+- [ ] Knowledge base infrastructure — `knowledge_base` table with pgvector embeddings, RAG retrieval
+- [ ] Default kAyphI knowledge base seed data (`src/content/knowledge-base.ts`)
+- [ ] System prompt builder — dynamic prompt from business identity + personality + retrieved context + available actions
+- [ ] Chatbot personality system — configurable tone, formality, name/persona, greeting, emoji, verbosity; presets (Professional, Friendly, Casual, Clinical) + custom
+- [ ] `/api/chat/route.ts` — **public** (no auth), IP rate limiting, RAG retrieval, streaming, action detection
+- [ ] `/api/chat/admin/route.ts` — chatbot config management (auth required)
+- [ ] Action system — page-aware + extensible: universal actions (`book_appointment`, `collect_contact`, `capture_info`, `navigate`) + page-specific actions via widget JS API (`setPageContext`)
+- [ ] Widget JavaScript API — `window.kayphiChat.setPageContext()` for host sites to register page type, page data, and available actions per page
+- [ ] Information capture — auto-extract leads, intent signals, questions, feedback from conversations for business review
+- [ ] Booking system — `/api/bookings/route.ts` (public POST, auth for management), `bookings` table
+- [ ] Chat widget UI — `ChatWidget`, `ChatBubble`, `ChatInput`, `BookingCalendar`, `QuickReplyChip`
+- [ ] Voice mode — `VoiceButton` (STT via Web Speech API / Whisper), `AudioPlayer` (TTS via OpenAI TTS API), configurable voice
+- [ ] Multilingual support — auto-detect visitor language, respond in kind, optional language selector
+- [ ] Image support — stored KB images (no cost), visitor photo understanding (vision, included), DALL-E generation (optional, budget-capped)
+- [ ] Dashboard chat management — conversation viewer, knowledge base editor (text + images), chatbot config (domain, voice, language, image generation toggle + budget), preview panel
+- [ ] Message persistence (role, content, tokens_used, language)
+- [ ] Analytics events for chatbot interactions
 
 ## Phase F: Workflow Automation
 - [ ] Workflow builder UI (form-based with RHF + Zod validation)
