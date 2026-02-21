@@ -204,7 +204,8 @@ Prioritized by recommended implementation order. Based on deep research of top A
 - [ ] OpenAI client (`src/lib/openai/client.ts`)
 - [ ] Knowledge base infrastructure — `knowledge_base` table with pgvector embeddings, RAG retrieval
 - [ ] Default kAyphI knowledge base seed data (`src/content/knowledge-base.ts`)
-- [ ] System prompt builder — dynamic prompt from business identity + retrieved context + available actions
+- [ ] System prompt builder — dynamic prompt from business identity + personality + retrieved context + available actions
+- [ ] Chatbot personality system — configurable tone, formality, name/persona, greeting, emoji, verbosity; presets (Professional, Friendly, Casual, Clinical) + custom
 - [ ] `/api/chat/route.ts` — **public** (no auth), IP rate limiting, RAG retrieval, streaming, action detection
 - [ ] `/api/chat/admin/route.ts` — chatbot config management (auth required)
 - [ ] Action system — extensible registry: `book_appointment`, `collect_contact`, `capture_info`, `navigate_section`

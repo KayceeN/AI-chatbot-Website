@@ -283,9 +283,10 @@ The chatbot is kAyphI's core product. It is a **public-facing** widget embedded 
   4. Domain boundaries and topic scope (configurable per business)
   5. Three-tier response rules:
      - **Tier 1 (KB match):** Answer from knowledge base context — grounded, highest confidence
-     - **Tier 2 (Domain-relevant, no KB match):** Answer using general LLM knowledge within the business domain, framed as general information (e.g., a dental office chatbot explains what a root canal is even without a KB entry). Optionally follow up with "Would you like to speak with our team for specifics?"
+     - **Tier 2 (Domain-relevant, no KB match):** Answer using general LLM knowledge within the business domain, delivered in the same tone and personality as Tier 1 — no hedging or "generally speaking" prefixes (e.g., a dental office chatbot confidently explains what a root canal is even without a KB entry). May follow up with a natural redirect like "Would you like to book a consultation?"
      - **Tier 3 (Off-topic):** Politely decline and redirect to the business's services (e.g., "Who won the Super Bowl?" → "I'm here to help with dental questions! Is there anything about our services I can help with?")
-  6. Guardrails: never fabricate business-specific claims; Tier 2 answers must be prefaced as general info
+  6. Guardrails: never fabricate business-specific claims (e.g., don't invent pricing or staff names)
+  7. Chatbot personality injection (tone, formality, name/persona, greeting style, emoji usage, verbosity) — applies to all tiers uniformly
 
 **`src/content/knowledge-base.ts`:**
 - Default knowledge base for kAyphI's own site (seeded from landing page content: services, pricing, process, FAQ, case studies)
@@ -306,6 +307,25 @@ The chatbot is kAyphI's core product. It is a **public-facing** widget embedded 
 | updated_at | timestamptz | |
 
 RLS: public SELECT (chatbot retrieval), owner INSERT/UPDATE/DELETE.
+
+### E.2b: Chatbot Personality System
+
+Each chatbot deployment has a **configurable personality** that governs all communication — Tier 1 KB answers, Tier 2 domain answers, and Tier 3 off-topic declines. The chatbot always speaks as the business, in the configured tone.
+
+**Personality dimensions (stored in chatbot config, injected into system prompt):**
+
+| Dimension | Options | Default |
+|-----------|---------|---------|
+| Tone | professional, friendly, casual, clinical, warm, authoritative, playful, custom | professional |
+| Formality | formal, semi-formal, casual | semi-formal |
+| Name / persona | any string (e.g., "Luna", "Dr. SmileBot") or none | business name |
+| Greeting style | configurable opening message | "Hi! How can I help you today?" |
+| Emoji usage | on / off / minimal | off |
+| Verbosity | concise / balanced / detailed | balanced |
+
+**Personality presets:** Owners can choose from presets (Professional, Friendly, Casual, Clinical) or customize each dimension independently.
+
+**Implementation:** The personality config is stored in the chatbot settings table and loaded at prompt-build time by `system-prompt.ts`. It translates each dimension into natural language instructions in the system prompt (e.g., "You speak in a warm, friendly tone. You use casual language and occasionally include emojis. Your name is Luna.").
 
 ### E.3: Chat API Route (Public)
 
@@ -497,6 +517,7 @@ The chatbot supports images in conversations — showing relevant visuals, under
 - View all visitor conversations (read-only)
 - Knowledge base editor — add/edit/delete knowledge base documents and images
 - Chatbot configuration:
+  - **Personality** — preset selection (Professional, Friendly, Casual, Clinical) or custom per-dimension config (tone, formality, name/persona, greeting, emoji usage, verbosity)
   - System prompt overrides
   - Model selection
   - Voice selection (TTS voice)
@@ -506,8 +527,7 @@ The chatbot supports images in conversations — showing relevant visuals, under
   - **Tier 2 response toggle** — enable/disable general domain answers (some businesses may prefer strict KB-only)
   - **Vision toggle** — enable/disable visitor image uploads
   - **Image generation toggle** — enable/disable DALL-E generation + budget cap settings
-  - Behavior toggles (greeting message, follow-up prompts, etc.)
-- Preview panel — test the chatbot with current knowledge base, domain config, and image behavior
+- Preview panel — test the chatbot with current personality, knowledge base, domain config, and image behavior
 
 ---
 

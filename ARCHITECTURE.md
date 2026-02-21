@@ -399,10 +399,32 @@ The chatbot uses a **domain-aware** response strategy, not a strict knowledge-ba
 - The business owner can configure domain keywords and topic boundaries in the dashboard
 - The LLM uses its understanding of the business category to classify questions as in-domain or off-topic
 
-**Tier 2 safeguards:**
-- Tier 2 answers are prefaced with context like "Generally speaking..." or "In most cases..." to distinguish them from business-specific answers
-- The chatbot may follow up with "Would you like to speak with our team for details specific to [business name]?"
+**Tier 2 behavior:**
+- Tier 2 answers are delivered in the **same tone and personality** as Tier 1 — no hedging, no "generally speaking" prefixes. The chatbot speaks as the business, maintaining the configured personality at all times.
+- The chatbot may follow up with a natural redirect like "Would you like to book a consultation to discuss your specific situation?"
 - Business owners can toggle Tier 2 on/off in the dashboard (some may prefer strict KB-only answers)
+
+### Chatbot Personality
+
+Each chatbot deployment has a **configurable personality** that defines how it communicates. The personality applies to all responses — Tier 1, Tier 2, and Tier 3 declines.
+
+**Personality dimensions (configured by the business owner):**
+- **Tone** — professional, friendly, casual, clinical, warm, authoritative, playful, etc.
+- **Formality level** — formal ("We would be happy to assist you") vs. casual ("Sure thing! Here's what you need to know")
+- **Name / persona** — the chatbot can have a name (e.g., "Luna", "Dr. SmileBot", "Alex") and refer to itself by that name
+- **Greeting style** — how it opens conversations ("Hi! How can I help?" vs. "Welcome to [Business]. What can I assist you with today?")
+- **Emoji usage** — on/off, with configurable frequency
+- **Verbosity** — concise (short direct answers) vs. detailed (thorough explanations)
+
+**Personality presets:** Business owners can choose from presets (Professional, Friendly, Casual, Clinical) or fully customize each dimension. The personality is injected into the system prompt and governs all LLM output.
+
+**Examples of the same answer in different personalities:**
+
+| Personality | Response to "What is a root canal?" |
+|------------|--------------------------------------|
+| Clinical (dental office) | "A root canal is a procedure to repair and save a tooth that is badly decayed or infected. The procedure involves removing the damaged pulp, cleaning the inside of the tooth, and sealing it. If you're experiencing tooth pain, we'd love to help — would you like to schedule an appointment?" |
+| Friendly (dental office) | "Great question! A root canal is basically how we save a tooth that's been damaged or infected. We clean out the inside, fix it up, and seal it so it's good as new. Nothing to worry about! Want to book a visit so we can take a look?" |
+| Playful (dental office) | "Ah, root canals! They sound scary but they're actually tooth-savers! Think of it as a deep clean for the inside of your tooth. We remove the ouchie parts, fix everything up, and seal it tight. Want to come in and let us work our magic?" |
 
 ### Action System (Extensible)
 
