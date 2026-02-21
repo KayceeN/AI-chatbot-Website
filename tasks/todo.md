@@ -213,7 +213,8 @@ Prioritized by recommended implementation order. Based on deep research of top A
 - [ ] Chat widget UI — `ChatWidget`, `ChatBubble`, `ChatInput`, `BookingCalendar`, `QuickReplyChip`
 - [ ] Voice mode — `VoiceButton` (STT via Web Speech API / Whisper), `AudioPlayer` (TTS via OpenAI TTS API), configurable voice
 - [ ] Multilingual support — auto-detect visitor language, respond in kind, optional language selector
-- [ ] Dashboard chat management — conversation viewer, knowledge base editor, chatbot config, preview panel
+- [ ] Image support — stored KB images (no cost), visitor photo understanding (vision, included), DALL-E generation (optional, budget-capped)
+- [ ] Dashboard chat management — conversation viewer, knowledge base editor (text + images), chatbot config (domain, voice, language, image generation toggle + budget), preview panel
 - [ ] Message persistence (role, content, tokens_used, language)
 - [ ] Analytics events for chatbot interactions
 

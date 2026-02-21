@@ -458,15 +458,39 @@ The chatbot can communicate in **multiple languages** — both text and voice.
 
 **Language selector:** Optional widget UI element letting visitors manually choose their preferred language.
 
+### Image Capabilities (Three-Tier)
+
+The chatbot supports images in conversations — showing relevant visuals, understanding visitor-uploaded photos, and optionally generating images on demand.
+
+| Tier | Capability | Cost impact | How it works |
+|------|-----------|-------------|-------------|
+| **1. Stored images** | Serve images from the knowledge base | **No extra LLM cost** — static file serving | Business uploads images (procedure diagrams, product photos, office images) as knowledge base entries. Chatbot displays them when the conversation context matches. |
+| **2. Vision (image input)** | Understand images visitors send | **Included in GPT-4o-mini** — images convert to tokens | Visitor uploads a photo (e.g., "What's wrong with my tooth?"). The model analyzes it using its built-in vision capability. No separate API call needed. |
+| **3. Image generation** | Generate new images on the fly via DALL-E | **Additional cost** — ~$0.04–0.12 per image (DALL-E 3) | When no stored image exists and a visual would help, the chatbot generates one. Business owners can enable/disable this and set a per-conversation or daily budget cap. |
+
+**Priority order:** The chatbot always prefers Tier 1 (stored) over Tier 3 (generated). If a relevant image exists in the knowledge base, it is served directly. Generation is a fallback for when no stored image fits.
+
+**Knowledge base images:**
+- Stored in the `knowledge_base` table with `type: "image"` and a reference to the file in object storage (Supabase Storage)
+- Tagged with metadata (topic, description, alt text) for retrieval matching
+- Business owners upload and manage images through the dashboard knowledge base editor
+
+**Dashboard controls:**
+- Toggle image generation on/off per chatbot deployment
+- Set budget cap for image generation (per conversation, daily, or monthly)
+- Upload/manage stored images in the knowledge base
+- Toggle vision (image input from visitors) on/off
+
 ### What kAyphI Sells to Clients
 
 The same chatbot architecture is the product kAyphI offers to other businesses:
-1. **Custom knowledge base** — built from the client's website, docs, and business info
+1. **Custom knowledge base** — built from the client's website, docs, and business info (text + images)
 2. **Embeddable widget** — drop-in script tag for any website
 3. **Voice mode** — visitors can speak to the chatbot and hear responses in a configurable voice
 4. **Multilingual** — auto-detects visitor language, responds in kind (text + voice)
-5. **Action configuration** — booking, lead capture, and custom actions per client
-6. **Analytics dashboard** — conversation insights, common questions, conversion tracking
+5. **Image support** — serve stored images, understand visitor photos (vision), optionally generate images (DALL-E)
+6. **Action configuration** — booking, lead capture, and custom actions per client
+7. **Analytics dashboard** — conversation insights, common questions, conversion tracking
 
 ---
 

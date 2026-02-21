@@ -461,21 +461,53 @@ The chatbot communicates in **multiple languages** — text and voice.
 - Visitor can manually override auto-detected language
 - Persisted in sessionStorage for the session
 
-### E.10: Dashboard Chat Management (Protected)
+### E.10: Image Capabilities (Three-Tier)
+
+The chatbot supports images in conversations — showing relevant visuals, understanding visitor uploads, and optionally generating images.
+
+**Tier 1 — Stored images (no extra LLM cost):**
+- Business uploads images to the knowledge base (procedure diagrams, product photos, office images)
+- Images stored in Supabase Storage, referenced in `knowledge_base` table with `type: "image"` and metadata (topic, description, alt text)
+- Chatbot retrieves and displays matching images inline when conversation context is relevant
+- Always preferred over generation — zero marginal cost
+
+**Tier 2 — Vision / image input (included in GPT-4o-mini):**
+- Visitor uploads a photo (e.g., dental patient sends a photo asking "What's wrong?")
+- Image sent to GPT-4o-mini via its built-in vision capability — images are converted to tokens, charged at standard token rates
+- No separate API call or model switch needed
+- Business owners can toggle visitor image uploads on/off
+
+**Tier 3 — Image generation via DALL-E (additional cost):**
+- When no stored image exists and a visual would genuinely help, the chatbot generates one via DALL-E 3
+- Cost: ~$0.04 (1024x1024 standard) to ~$0.12 (1792x1024 HD) per image
+- Business owners configure:
+  - Enable/disable image generation entirely
+  - Budget cap: per conversation, daily, or monthly limit
+  - Quality setting: standard vs HD
+
+**Components:**
+- `ImageMessage` — renders inline images in chat (stored or generated), with alt text and optional expand
+- `ImageUpload` — visitor image upload button in ChatInput (drag-drop or file picker)
+
+**Priority logic:** Chatbot always checks for a matching stored image (Tier 1) before falling back to generation (Tier 3). The system prompt instructs the LLM to describe what image it wants to show, and the action system resolves it against the knowledge base first.
+
+### E.11: Dashboard Chat Management (Protected)
 
 **`src/app/(dashboard)/chat/page.tsx`:**
 - View all visitor conversations (read-only)
-- Knowledge base editor — add/edit/delete knowledge base documents
+- Knowledge base editor — add/edit/delete knowledge base documents and images
 - Chatbot configuration:
   - System prompt overrides
   - Model selection
   - Voice selection (TTS voice)
   - Language settings (default language, auto-detect toggle)
-  - **Business domain / category** (e.g., "dental office", "AI automation agency") — defines Tier 2 topic boundaries
+  - **Business domain / category** (e.g., "dental office", "AI automation agency") — defines Tier 2 response topic boundaries
   - **Domain keywords** — additional topic areas the chatbot should treat as in-scope
-  - **Tier 2 toggle** — enable/disable general domain answers (some businesses may prefer strict KB-only)
+  - **Tier 2 response toggle** — enable/disable general domain answers (some businesses may prefer strict KB-only)
+  - **Vision toggle** — enable/disable visitor image uploads
+  - **Image generation toggle** — enable/disable DALL-E generation + budget cap settings
   - Behavior toggles (greeting message, follow-up prompts, etc.)
-- Preview panel — test the chatbot with current knowledge base and domain config
+- Preview panel — test the chatbot with current knowledge base, domain config, and image behavior
 
 ---
 
@@ -626,6 +658,8 @@ Auto-tracked events:
 | `src/components/chat/QuickReplyChip.tsx` | E | Suggested response buttons |
 | `src/components/chat/VoiceButton.tsx` | E | Microphone toggle for voice input |
 | `src/components/chat/AudioPlayer.tsx` | E | Inline audio playback for voice responses |
+| `src/components/chat/ImageMessage.tsx` | E | Inline image display (stored or generated) |
+| `src/components/chat/ImageUpload.tsx` | E | Visitor image upload (drag-drop / file picker) |
 | `src/lib/analytics/track.ts` | G | Event tracking |
 | `supabase/migrations/*.sql` | B | Database schema (8 migrations) |
 | `Dockerfile` | B | Container config |
