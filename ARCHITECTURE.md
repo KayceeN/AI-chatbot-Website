@@ -384,6 +384,26 @@ The chatbot's intelligence comes from a **business knowledge base** — structur
 
 **Management:** Business owners manage their knowledge base through the dashboard (`/chat` page in the dashboard) — upload documents, edit entries, preview chatbot responses.
 
+### Response Behavior (Three-Tier)
+
+The chatbot uses a **domain-aware** response strategy, not a strict knowledge-base-only filter. The business domain is defined by the knowledge base content and the business category (e.g., "dental office", "AI automation agency").
+
+| Tier | Condition | Behavior | Example |
+|------|-----------|----------|---------|
+| **1. Knowledge base match** | Question matches knowledge base content | Answer from retrieved knowledge base context (grounded, highest confidence) | "What are your pricing plans?" → answer from pricing KB entries |
+| **2. Domain-relevant, no KB match** | Question is within the business domain but not covered by the knowledge base | Answer using LLM general knowledge, clearly framed as general information (not specific to the business) | Dental office chatbot: "What is a root canal?" → explain the procedure using general dental knowledge |
+| **3. Off-topic** | Question is outside the business domain entirely | Politely decline and redirect to the business's services | Dental office chatbot: "Who won the Super Bowl?" → "I'm here to help with dental questions! Is there anything about our services I can assist with?" |
+
+**How domain relevance is determined:**
+- The system prompt defines the business category and domain boundaries (e.g., "You are a chatbot for a dental office. You can answer general dentistry questions even if they are not in the knowledge base.")
+- The business owner can configure domain keywords and topic boundaries in the dashboard
+- The LLM uses its understanding of the business category to classify questions as in-domain or off-topic
+
+**Tier 2 safeguards:**
+- Tier 2 answers are prefaced with context like "Generally speaking..." or "In most cases..." to distinguish them from business-specific answers
+- The chatbot may follow up with "Would you like to speak with our team for details specific to [business name]?"
+- Business owners can toggle Tier 2 on/off in the dashboard (some may prefer strict KB-only answers)
+
 ### Action System (Extensible)
 
 The chatbot can perform actions beyond answering questions. Actions are registered in `src/lib/chatbot/actions.ts` and triggered when the LLM detects intent.
@@ -531,4 +551,4 @@ OPENAI_API_KEY=<your-openai-key>
 3. **Typed content.** All marketing copy flows through `LandingPageContent` — no hardcoded strings in components.
 4. **Component composition.** Sections compose primitives (`GlassCard`, `SectionShell`, etc.) — no one-off styling.
 5. **Server-only secrets.** `SUPABASE_SERVICE_ROLE_KEY` and `OPENAI_API_KEY` never appear in client bundles.
-6. **Knowledge-base grounded.** The chatbot only answers from knowledge base context + system prompt. No ungrounded generation that could fabricate business claims.
+6. **Domain-aware responses.** The chatbot answers from knowledge base context (Tier 1), general domain knowledge (Tier 2), or politely declines off-topic questions (Tier 3). It never fabricates business-specific claims — Tier 2 answers are clearly framed as general information.

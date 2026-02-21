@@ -277,10 +277,15 @@ The chatbot is kAyphI's core product. It is a **public-facing** widget embedded 
 
 **`src/lib/chatbot/system-prompt.ts`:**
 - Builds the system prompt dynamically from:
-  1. Business identity (name, services, tone)
+  1. Business identity (name, services, tone, business category/domain)
   2. Retrieved knowledge base context (RAG results)
   3. Available actions the chatbot can perform
-  4. Guardrails (only answer from provided context, do not fabricate claims)
+  4. Domain boundaries and topic scope (configurable per business)
+  5. Three-tier response rules:
+     - **Tier 1 (KB match):** Answer from knowledge base context — grounded, highest confidence
+     - **Tier 2 (Domain-relevant, no KB match):** Answer using general LLM knowledge within the business domain, framed as general information (e.g., a dental office chatbot explains what a root canal is even without a KB entry). Optionally follow up with "Would you like to speak with our team for specifics?"
+     - **Tier 3 (Off-topic):** Politely decline and redirect to the business's services (e.g., "Who won the Super Bowl?" → "I'm here to help with dental questions! Is there anything about our services I can help with?")
+  6. Guardrails: never fabricate business-specific claims; Tier 2 answers must be prefaced as general info
 
 **`src/content/knowledge-base.ts`:**
 - Default knowledge base for kAyphI's own site (seeded from landing page content: services, pricing, process, FAQ, case studies)
@@ -461,8 +466,16 @@ The chatbot communicates in **multiple languages** — text and voice.
 **`src/app/(dashboard)/chat/page.tsx`:**
 - View all visitor conversations (read-only)
 - Knowledge base editor — add/edit/delete knowledge base documents
-- Chatbot configuration — system prompt overrides, model selection, voice selection, language settings, behavior toggles
-- Preview panel — test the chatbot with current knowledge base
+- Chatbot configuration:
+  - System prompt overrides
+  - Model selection
+  - Voice selection (TTS voice)
+  - Language settings (default language, auto-detect toggle)
+  - **Business domain / category** (e.g., "dental office", "AI automation agency") — defines Tier 2 topic boundaries
+  - **Domain keywords** — additional topic areas the chatbot should treat as in-scope
+  - **Tier 2 toggle** — enable/disable general domain answers (some businesses may prefer strict KB-only)
+  - Behavior toggles (greeting message, follow-up prompts, etc.)
+- Preview panel — test the chatbot with current knowledge base and domain config
 
 ---
 
