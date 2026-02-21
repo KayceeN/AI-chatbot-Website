@@ -1,6 +1,8 @@
 # ARCHITECTURE.md — System Architecture
 
-This document describes the actual project structure and planned extensions for OrbAI.
+This document describes the actual project structure and planned extensions for kAyphI.
+
+**Product identity:** kAyphI is an AI automation company that provides businesses with four core services: AI Strategy Consulting, Content Generation, AI-Powered Chatbots, and Automated Workflows. The kAyphI website serves dual purposes — it is the company's marketing site and a live demonstration of the product suite. A public-facing chatbot widget on the site answers visitor questions using a business knowledge base and can perform actions like booking appointments. This chatbot is both a real tool for kAyphI's own visitors and a showcase of what kAyphI builds for its clients.
 
 For visual design decisions, see [DESIGN.md](DESIGN.md).
 For the full product roadmap, see [docs/plans/2026-02-14-full-product-plan.md](docs/plans/2026-02-14-full-product-plan.md).
@@ -96,12 +98,15 @@ src/
 │   ├── (dashboard)/
 │   │   ├── layout.tsx                  # Dashboard shell (sidebar nav)
 │   │   ├── page.tsx                    # Dashboard overview
-│   │   ├── chat/page.tsx               # AI chatbot interface
+│   │   ├── chat/page.tsx               # Chatbot management (knowledge base, config)
 │   │   ├── workflows/page.tsx          # Workflow builder + list
 │   │   ├── analytics/page.tsx          # Analytics dashboard
 │   │   └── settings/page.tsx           # Profile settings
 │   ├── api/
-│   │   ├── chat/route.ts              # OpenAI streaming chat
+│   │   ├── chat/route.ts              # Public chatbot endpoint (no auth — visitor-facing)
+│   │   ├── chat/admin/route.ts        # Chatbot config management (auth required)
+│   │   ├── bookings/route.ts          # Appointment booking CRUD
+│   │   ├── knowledge/route.ts         # Knowledge base CRUD (auth required)
 │   │   ├── workflows/route.ts         # Workflow CRUD
 │   │   ├── workflows/run/route.ts     # Workflow execution
 │   │   └── analytics/route.ts         # Analytics queries
@@ -113,17 +118,23 @@ src/
 │   │   └── DashboardSidebar.tsx
 │   ├── sections/                       # Marketing sections (unchanged)
 │   │   └── ...
+│   ├── chat/                           # Public chatbot widget components
+│   │   ├── ChatWidget.tsx              # Floating bubble + expandable panel
+│   │   ├── ChatBubble.tsx              # Individual message bubble
+│   │   ├── ChatInput.tsx               # Text input with send + quick replies
+│   │   ├── BookingCalendar.tsx         # Inline appointment picker
+│   │   └── QuickReplyChip.tsx          # Suggested response buttons
 │   ├── ui/                             # Shared primitives (existing + shadcn/ui)
 │   │   └── ...
 │   ├── dashboard/                      # Dashboard-specific components
 │   │   ├── StatCard.tsx
-│   │   ├── ChatMessage.tsx
-│   │   ├── ChatInput.tsx
+│   │   ├── KnowledgeBaseEditor.tsx     # Upload/manage knowledge base content
 │   │   └── WorkflowStep.tsx
 │   └── forms/                          # RHF + Zod form components
 │       └── ...
 ├── content/
-│   └── landing.ts
+│   ├── landing.ts                      # Marketing page content
+│   └── knowledge-base.ts              # Default kAyphI knowledge base (own site demo)
 ├── lib/
 │   ├── motion.ts
 │   ├── utils.ts
@@ -132,6 +143,10 @@ src/
 │   │   └── server.ts                   # Server client (service role)
 │   ├── openai/
 │   │   └── client.ts                   # OpenAI client configuration
+│   ├── chatbot/
+│   │   ├── knowledge.ts               # Knowledge base retrieval (RAG pipeline)
+│   │   ├── actions.ts                  # Extensible action registry (booking, etc.)
+│   │   └── system-prompt.ts           # System prompt builder from knowledge base
 │   └── analytics/
 │       └── track.ts                    # Event logging utility
 ├── middleware.ts                        # Auth route protection
@@ -143,9 +158,11 @@ supabase/
     ├── 001_create_profiles.sql
     ├── 002_create_conversations.sql
     ├── 003_create_messages.sql
-    ├── 004_create_workflows.sql
-    ├── 005_create_workflow_runs.sql
-    └── 006_create_analytics_events.sql
+    ├── 004_create_knowledge_base.sql   # Knowledge base documents + embeddings
+    ├── 005_create_bookings.sql         # Appointment bookings
+    ├── 006_create_workflows.sql
+    ├── 007_create_workflow_runs.sql
+    └── 008_create_analytics_events.sql
 ```
 
 ---
@@ -269,13 +286,17 @@ API routes (additional layer)
 
 ## Database Schema (Planned)
 
-Six tables, all with RLS enabled:
+Eight tables, all with RLS enabled:
 
 ```
 profiles (extends auth.users)
     │
-    ├── conversations (1:many)
+    ├── knowledge_base (1:many)         # Business knowledge documents + embeddings
+    │
+    ├── conversations (1:many)          # Visitor chat sessions (public, no auth)
     │   └── messages (1:many)
+    │
+    ├── bookings (1:many)               # Appointment bookings from chatbot or /book page
     │
     ├── workflows (1:many)
     │   └── workflow_runs (1:many)
@@ -283,7 +304,10 @@ profiles (extends auth.users)
     └── analytics_events (1:many)
 ```
 
-**RLS policy:** Every table enforces `auth.uid() = user_id` for all operations. Users can only CRUD their own rows.
+**RLS policy:** Most tables enforce `auth.uid() = user_id` for owner operations. Exceptions:
+- `conversations` and `messages` — public INSERT allowed (visitor chats), owner SELECT/UPDATE/DELETE
+- `knowledge_base` — public SELECT for chatbot retrieval, owner INSERT/UPDATE/DELETE
+- `bookings` — public INSERT (visitors book), owner SELECT/UPDATE/DELETE
 
 See [docs/plans/2026-02-14-ai-chatbot-website-design.md](docs/plans/2026-02-14-ai-chatbot-website-design.md) for full column definitions.
 
@@ -291,21 +315,138 @@ See [docs/plans/2026-02-14-ai-chatbot-website-design.md](docs/plans/2026-02-14-a
 
 ## API Architecture (Planned)
 
-All API routes follow a consistent pattern:
+API routes follow two patterns — **public** (visitor-facing, no auth) and **protected** (dashboard, auth required):
 
+**Public routes (rate-limited by IP):**
 ```
-1. Verify auth (getUser() — reject if no valid session)
-2. Validate input (Zod schema — reject with 400 if invalid)
+1. Validate input (Zod schema — reject with 400 if invalid)
+2. Rate limit by IP (token bucket)
 3. Execute business logic
 4. Return typed response (or stream for chat)
 ```
 
+**Protected routes (rate-limited by user):**
+```
+1. Verify auth (getUser() — reject if no valid session)
+2. Validate input (Zod schema — reject with 400 if invalid)
+3. Execute business logic
+4. Return typed response
+```
+
 | Endpoint | Method | Auth | Rate limited | Description |
 |----------|--------|------|-------------|-------------|
-| `/api/chat` | POST | Yes | Yes (token bucket) | Stream OpenAI response |
+| `/api/chat` | POST | **No** (public) | Yes (IP-based) | Public chatbot — streams knowledge-base-powered response to visitors |
+| `/api/chat/admin` | GET/POST/PATCH | Yes | No | Chatbot configuration (system prompt, model, behavior) |
+| `/api/bookings` | GET/POST/PATCH/DELETE | POST: **No** (public), others: Yes | Yes (IP for public) | Appointment scheduling — visitors create, owners manage |
+| `/api/knowledge` | GET/POST/PATCH/DELETE | Yes | No | Knowledge base document CRUD |
 | `/api/workflows` | GET/POST/PATCH/DELETE | Yes | No | Workflow CRUD |
 | `/api/workflows/run` | POST | Yes | Yes | Execute workflow (idempotent) |
 | `/api/analytics` | GET | Yes | No | Query analytics events |
+
+---
+
+## Chatbot Architecture (Planned)
+
+The chatbot is kAyphI's core product — a public-facing AI assistant embedded on the marketing site as a floating widget. It requires **no login** from visitors.
+
+### How It Works
+
+```
+Visitor opens site
+    │
+    ▼
+ChatWidget (floating bubble, bottom-right)
+    │ visitor clicks bubble
+    ▼
+Chat panel expands
+    │ visitor types question
+    ▼
+POST /api/chat
+    │
+    ├── 1. Rate limit check (IP-based token bucket)
+    ├── 2. Input validation (Zod)
+    ├── 3. Retrieve relevant knowledge base chunks (embedding similarity search)
+    ├── 4. Build system prompt (business identity + retrieved context)
+    ├── 5. Stream response via Vercel AI SDK + OpenAI
+    ├── 6. Detect action intents (booking, contact, etc.)
+    │   └── If booking intent → surface BookingCalendar inline
+    ├── 7. Persist conversation + messages to Supabase
+    └── 8. Log analytics event
+```
+
+### Knowledge Base
+
+The chatbot's intelligence comes from a **business knowledge base** — structured content about the company's services, pricing, process, FAQ, case studies, and policies. For kAyphI's own site, this is seeded from the landing page content and supplemented with additional business details.
+
+**Storage:** `knowledge_base` table with document chunks + vector embeddings (pgvector via Supabase).
+
+**Retrieval:** On each user message, the top-K most relevant chunks are retrieved by embedding similarity and injected into the system prompt as context (RAG pattern).
+
+**Management:** Business owners manage their knowledge base through the dashboard (`/chat` page in the dashboard) — upload documents, edit entries, preview chatbot responses.
+
+### Action System (Extensible)
+
+The chatbot can perform actions beyond answering questions. Actions are registered in `src/lib/chatbot/actions.ts` and triggered when the LLM detects intent.
+
+**MVP actions:**
+| Action | Trigger | Effect |
+|--------|---------|--------|
+| `book_appointment` | Visitor asks to schedule a call/demo | Surface inline calendar, create booking |
+| `collect_contact` | Visitor wants to be contacted | Capture name + email, store as lead |
+| `capture_info` | Visitor shares business needs, preferences, or feedback | Store structured data for the business to review/act on later |
+| `navigate` | Visitor asks about a section | Scroll to the relevant section on the page |
+
+### Information Capture
+
+Beyond direct actions, the chatbot continuously **captures actionable information** from conversations for the business to act on later:
+
+- **Lead data** — name, email, company, role, expressed needs
+- **Intent signals** — which services the visitor is interested in, budget indicators, timeline
+- **Questions asked** — common questions reveal knowledge gaps or new FAQ opportunities
+- **Feedback** — complaints, feature requests, product impressions
+- **Conversation summaries** — auto-generated summary of each conversation for quick review
+
+This data is stored in the `analytics_events` table (structured) and viewable in the dashboard. Business owners can filter, search, and export captured information.
+
+**Future actions (extensible):**
+- Qualify leads (BANT questions)
+- Hand off to human support
+- Submit support tickets
+- Trigger workflows
+- Integration with external calendars (Google Calendar, Calendly)
+- CRM sync (push captured leads/info to Salesforce, HubSpot, etc.)
+
+### Voice Mode
+
+The chatbot supports **voice conversations** — visitors can speak to it and hear responses read back in a selected voice.
+
+**Speech-to-Text (input):** Browser Web Speech API (`SpeechRecognition`) or OpenAI Whisper API for higher accuracy. Visitor taps a microphone button to start speaking; transcribed text is sent as a regular chat message.
+
+**Text-to-Speech (output):** OpenAI TTS API (`tts-1` model) with selectable voices. Assistant responses are converted to audio and played back inline. Business owners can configure the default voice in the dashboard.
+
+**Fallback:** If the browser does not support Web Speech API or the visitor denies microphone access, the widget gracefully falls back to text-only mode.
+
+### Multilingual Support
+
+The chatbot can communicate in **multiple languages** — both text and voice.
+
+**Language detection:** Auto-detect the visitor's language from their first message (via the LLM or a lightweight detection library). Respond in the same language.
+
+**Knowledge base translation:** The system prompt instructs the LLM to answer in the visitor's language using the knowledge base content (which may be in English). For higher quality, business owners can optionally provide translated knowledge base entries.
+
+**Voice language:** Speech-to-text and text-to-speech adapt to the detected language. OpenAI Whisper supports 50+ languages; TTS voices are selected per language.
+
+**Language selector:** Optional widget UI element letting visitors manually choose their preferred language.
+
+### What kAyphI Sells to Clients
+
+The same chatbot architecture is the product kAyphI offers to other businesses:
+1. **Custom knowledge base** — built from the client's website, docs, and business info
+2. **Embeddable widget** — drop-in script tag for any website
+3. **Voice mode** — visitors can speak to the chatbot and hear responses in a configurable voice
+4. **Multilingual** — auto-detects visitor language, responds in kind (text + voice)
+5. **Action configuration** — booking, lead capture, and custom actions per client
+6. **Analytics dashboard** — conversation insights, common questions, conversion tracking
 
 ---
 
@@ -385,8 +526,9 @@ OPENAI_API_KEY=<your-openai-key>
 
 ## Invariants
 
-1. **Auth before data.** No API route processes requests without verifying auth via `getUser()`.
-2. **RLS always on.** Every user-facing table has row-level security. No `service_role` queries in user-facing code.
+1. **Auth before data (protected routes).** All dashboard/admin API routes verify auth via `getUser()`. Public routes (`/api/chat`, `POST /api/bookings`) use IP-based rate limiting instead.
+2. **RLS always on.** Every table has row-level security. Public tables allow constrained public access (INSERT for visitor chats/bookings, SELECT for knowledge retrieval). No `service_role` queries in user-facing code.
 3. **Typed content.** All marketing copy flows through `LandingPageContent` — no hardcoded strings in components.
 4. **Component composition.** Sections compose primitives (`GlassCard`, `SectionShell`, etc.) — no one-off styling.
 5. **Server-only secrets.** `SUPABASE_SERVICE_ROLE_KEY` and `OPENAI_API_KEY` never appear in client bundles.
+6. **Knowledge-base grounded.** The chatbot only answers from knowledge base context + system prompt. No ungrounded generation that could fabricate business claims.

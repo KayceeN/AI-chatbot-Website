@@ -101,10 +101,14 @@ Prioritized by recommended implementation order. Based on deep research of top A
 - [ ] Update copyright from "Designed by FrameBase" to kAyphI branding
 - [ ] Fix FAQ email fallback (`kayphi@support.com`) — verify or update
 
-### Step 8: Live AI Chatbot Widget
-- [ ] Deploy floating chatbot widget on homepage (depends on Phase E chatbot build)
-- [ ] Chatbot answers FAQs, qualifies leads (BANT), and hands off to booking flow
-- [ ] "See how this was built" CTA from chatbot to product tour
+### Step 8: Live AI Chatbot Widget (Depends on Phase E)
+- [ ] Deploy floating `ChatWidget` on marketing site (public, no auth)
+- [ ] Chatbot answers visitor questions from kAyphI knowledge base (services, pricing, process, FAQ)
+- [ ] Voice mode — visitors can speak and hear responses in configurable voice
+- [ ] Multilingual — auto-detect language, respond in kind
+- [ ] Book appointment action — inline calendar from chatbot conversation
+- [ ] Lead capture action — collect name/email when visitor expresses interest
+- [ ] "See how this was built" CTA — link to product demo/tour
 
 ### Step 9: Blog Infrastructure
 - [ ] Set up MDX-based blog in Next.js (`/blog` route)
@@ -196,13 +200,22 @@ Prioritized by recommended implementation order. Based on deep research of top A
 - [ ] Settings page (profile update form with RHF + Zod validation)
 - [ ] Responsive sidebar (collapsible on mobile)
 
-## Phase E: AI Chatbot
+## Phase E: AI Chatbot (Public-Facing Widget + Knowledge Base + Voice + Multilingual)
 - [ ] OpenAI client (`src/lib/openai/client.ts`)
-- [ ] Vercel AI SDK integration for streaming
-- [ ] `/api/chat/route.ts` — auth, Zod validation, rate limiting, input sanitization
-- [ ] Chat UI — conversation list sidebar, message thread, streaming input
-- [ ] Conversation CRUD with Supabase
-- [ ] Message persistence (role, content, tokens_used)
+- [ ] Knowledge base infrastructure — `knowledge_base` table with pgvector embeddings, RAG retrieval
+- [ ] Default kAyphI knowledge base seed data (`src/content/knowledge-base.ts`)
+- [ ] System prompt builder — dynamic prompt from business identity + retrieved context + available actions
+- [ ] `/api/chat/route.ts` — **public** (no auth), IP rate limiting, RAG retrieval, streaming, action detection
+- [ ] `/api/chat/admin/route.ts` — chatbot config management (auth required)
+- [ ] Action system — extensible registry: `book_appointment`, `collect_contact`, `capture_info`, `navigate_section`
+- [ ] Information capture — auto-extract leads, intent signals, questions, feedback from conversations for business review
+- [ ] Booking system — `/api/bookings/route.ts` (public POST, auth for management), `bookings` table
+- [ ] Chat widget UI — `ChatWidget`, `ChatBubble`, `ChatInput`, `BookingCalendar`, `QuickReplyChip`
+- [ ] Voice mode — `VoiceButton` (STT via Web Speech API / Whisper), `AudioPlayer` (TTS via OpenAI TTS API), configurable voice
+- [ ] Multilingual support — auto-detect visitor language, respond in kind, optional language selector
+- [ ] Dashboard chat management — conversation viewer, knowledge base editor, chatbot config, preview panel
+- [ ] Message persistence (role, content, tokens_used, language)
+- [ ] Analytics events for chatbot interactions
 
 ## Phase F: Workflow Automation
 - [ ] Workflow builder UI (form-based with RHF + Zod validation)

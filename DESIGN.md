@@ -1,6 +1,6 @@
 # DESIGN.md — Visual Design System
 
-This document defines the visual design system for OrbAI. It is split into **Current State** (what the Codex build implements today) and **Target State** (what the reference video and full product require). This avoids codifying known defects as intended behavior.
+This document defines the visual design system for kAyphI. It is split into **Current State** (what the Codex build implements today) and **Target State** (what the reference video and full product require). This avoids codifying known defects as intended behavior.
 
 For architectural details, see [ARCHITECTURE.md](ARCHITECTURE.md).
 For the full gap analysis, see [docs/plans/2026-02-14-visual-audit.md](docs/plans/2026-02-14-visual-audit.md).
@@ -13,10 +13,10 @@ Everything below describes the actual Codex build as of 2026-02-14.
 
 ### Brand
 
-- **Name:** OrbAI
+- **Name:** kAyphI
 - **Tagline:** "AI Automation for Businesses"
 - **Tone:** Professional, high-key monochrome, clean
-- **Logo:** Custom `LogoMark` component — two rotated white squares inside a black circle, plus "OrbAI" text (`src/components/ui/LogoMark.tsx`)
+- **Logo:** Custom `LogoMark` component — two rotated white squares inside a black circle, plus "kAyphI" text (`src/components/ui/LogoMark.tsx`)
 
 ### Color Palette
 
@@ -217,7 +217,20 @@ Exact hex values to be determined during Phase D implementation. Will be added t
 | shadcn/ui | Button, Input, Textarea, Select, Dialog, Dropdown, Toast, Tabs, Avatar, Badge, Card, Sidebar | Accessible primitives for product UI |
 | React Hook Form + Zod | Form, FormField, FormItem, FormLabel, FormMessage | Validated form composition |
 | Recharts | LineChart, BarChart, AreaChart | Analytics visualizations |
-| Custom | ChatMessage, ChatInput, WorkflowStep, StatCard, DashboardSidebar | Product-specific components |
+| Custom | ChatWidget, ChatBubble, ChatMessage, ChatInput, BookingCalendar, WorkflowStep, StatCard, DashboardSidebar | Product-specific components |
+
+### Chatbot Widget Components (Public-Facing)
+
+| Component | Purpose |
+|-----------|---------|
+| `ChatWidget` | Floating chat bubble + expandable panel on marketing site (no auth required) |
+| `ChatBubble` | Individual message bubble (user/assistant) with avatar and typing indicator |
+| `ChatInput` | Text input with send button, auto-resize, suggested quick-reply chips |
+| `BookingCalendar` | Inline calendar for appointment scheduling, triggered by chatbot action |
+| `QuickReplyChip` | Suggested response buttons the chatbot can surface contextually |
+| `VoiceButton` | Microphone toggle for voice input (records → transcribes → sends as text) |
+| `AudioPlayer` | Inline audio playback for assistant voice responses (OpenAI TTS) |
+| `LanguageSelector` | Optional dropdown for visitor to choose preferred language |
 
 ### New Layout Patterns
 
