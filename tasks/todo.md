@@ -238,7 +238,8 @@ Research and define pricing strategy for kAyphI's chatbot product and all add-on
 - [ ] Chatbot personality system — configurable tone, formality, name/persona, greeting, emoji, verbosity; presets (Professional, Friendly, Casual, Clinical) + custom
 - [ ] `/api/chat/route.ts` — **public** (no auth), IP rate limiting, RAG retrieval, streaming, action detection
 - [ ] `/api/chat/admin/route.ts` — chatbot config management (auth required)
-- [ ] Action system — extensible registry: `book_appointment`, `collect_contact`, `capture_info`, `navigate_section`
+- [ ] Action system — page-aware + extensible: universal actions (`book_appointment`, `collect_contact`, `capture_info`, `navigate`) + page-specific actions via widget JS API (`setPageContext`)
+- [ ] Widget JavaScript API — `window.kayphiChat.setPageContext()` for host sites to register page type, page data, and available actions per page
 - [ ] Information capture — auto-extract leads, intent signals, questions, feedback from conversations for business review
 - [ ] Booking system — `/api/bookings/route.ts` (public POST, auth for management), `bookings` table
 - [ ] Chat widget UI — `ChatWidget`, `ChatBubble`, `ChatInput`, `BookingCalendar`, `QuickReplyChip`

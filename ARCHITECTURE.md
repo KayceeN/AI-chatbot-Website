@@ -426,17 +426,73 @@ Each chatbot deployment has a **configurable personality** that defines how it c
 | Friendly (dental office) | "Great question! A root canal is basically how we save a tooth that's been damaged or infected. We clean out the inside, fix it up, and seal it so it's good as new. Nothing to worry about! Want to book a visit so we can take a look?" |
 | Playful (dental office) | "Ah, root canals! They sound scary but they're actually tooth-savers! Think of it as a deep clean for the inside of your tooth. We remove the ouchie parts, fix everything up, and seal it tight. Want to come in and let us work our magic?" |
 
-### Action System (Extensible)
+### Action System (Page-Aware + Extensible)
 
-The chatbot can perform actions beyond answering questions. Actions are registered in `src/lib/chatbot/actions.ts` and triggered when the LLM detects intent.
+The chatbot can perform actions beyond answering questions. Actions are **page-aware** — the chatbot knows what page the visitor is on and what functionality is available, and only offers actions relevant to the current context.
 
-**MVP actions:**
+**How page awareness works:**
+```
+Visitor is on a page
+    │
+    ▼
+ChatWidget receives page context from the host page:
+    ├── current URL / route
+    ├── page type (e.g., "product-listing", "checkout", "landing", "blog")
+    ├── available actions for this page (registered by the host site)
+    └── page-specific data (e.g., product ID, cart contents, article title)
+    │
+    ▼
+System prompt is built with:
+    ├── business knowledge base (always)
+    ├── page context (current page type + available actions)
+    └── page-specific data (what the visitor is looking at)
+```
+
+The host website registers available actions per page via the widget's JavaScript API. The chatbot only offers actions that are available on the current page.
+
+**Universal actions (available on every page):**
 | Action | Trigger | Effect |
 |--------|---------|--------|
 | `book_appointment` | Visitor asks to schedule a call/demo | Surface inline calendar, create booking, trigger confirmation email workflow |
 | `collect_contact` | Visitor wants to be contacted | Capture name + email, store as lead |
 | `capture_info` | Visitor shares business needs, preferences, or feedback | Store structured data for the business to review/act on later |
-| `navigate` | Visitor asks about a section | Scroll to the relevant section on the page |
+| `navigate` | Visitor asks about a section/page | Navigate to the relevant page or scroll to section |
+
+**Page-specific action examples (configured per client site):**
+
+| Page type | Action | Trigger | Effect |
+|-----------|--------|---------|--------|
+| Product listing | `filter_products` | "Show me red dresses under $50" | Apply filters on the product grid |
+| Product detail | `add_to_cart` | "Add this to my cart" | Add the current product to cart |
+| Product detail | `check_availability` | "Is this in stock in size M?" | Query inventory and respond |
+| Checkout | `apply_coupon` | "Do you have any discount codes?" | Surface available coupons or apply one |
+| Dashboard | `run_report` | "Show me last month's sales" | Trigger a report generation |
+| Blog/article | `find_related` | "Do you have more articles about this?" | Surface related content |
+| Healthcare portal | `check_symptoms` | "I've had a headache for 3 days" | Run symptom checker flow |
+| Restaurant | `place_order` | "I'd like to order a large pepperoni pizza" | Start order flow |
+| Real estate | `schedule_viewing` | "Can I see this property Saturday?" | Book a property viewing |
+
+**Widget JavaScript API for registering page actions:**
+```javascript
+// Host site registers actions available on the current page
+window.kayphiChat.setPageContext({
+  pageType: "product-detail",
+  pageData: { productId: "SKU-123", productName: "Running Shoes", price: 89.99 },
+  actions: [
+    { name: "add_to_cart", description: "Add this product to the visitor's cart", handler: (data) => addToCart(data.productId) },
+    { name: "check_availability", description: "Check stock for a size/color", handler: (data) => checkStock(data) },
+    { name: "notify_restock", description: "Sign up for restock notification", handler: (data) => notifyRestock(data) }
+  ]
+});
+```
+
+The chatbot receives these registered actions in its system prompt and can invoke them via function calling. The handler runs on the client side (host website's JavaScript), so the chatbot can interact with any page functionality the host site exposes.
+
+**Business owner configuration (dashboard):**
+- Define global actions (available on all pages)
+- Define page-type templates with default actions (e.g., "all product pages get add_to_cart")
+- Custom actions per specific page (e.g., "the pricing page gets compare_plans")
+- Action permissions — which actions require visitor confirmation before executing
 
 ### Information Capture
 

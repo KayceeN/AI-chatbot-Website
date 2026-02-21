@@ -352,20 +352,65 @@ Each chatbot deployment has a **configurable personality** that governs all comm
 - `POST/PATCH` — update chatbot configuration
 - Auth required via `getUser()`
 
-### E.5: Action System (Extensible)
+### E.5: Action System (Page-Aware + Extensible)
 
 **`src/lib/chatbot/actions.ts`:**
 - Action registry pattern — each action has a name, description, trigger detection, and handler
 - LLM uses function calling or structured output to signal action intent
+- Actions are **page-aware** — the chatbot receives page context and only offers actions relevant to the current page
 
-**MVP actions:**
+**Page context flow:**
+1. Host website calls `window.kayphiChat.setPageContext(...)` with current page type, page data, and available actions
+2. Widget sends page context to `/api/chat` alongside the conversation messages
+3. System prompt includes the available actions for this page — the LLM only offers what's registered
+4. When the LLM triggers an action, the widget invokes the client-side handler registered by the host page
+
+**Universal actions (available on every page):**
 
 | Action | Trigger | Effect |
 |--------|---------|--------|
 | `book_appointment` | Visitor asks to schedule a call/demo | Surface inline BookingCalendar, create booking via `/api/bookings`, trigger confirmation email workflow |
 | `collect_contact` | Visitor wants to be contacted | Capture name + email, store as lead |
 | `capture_info` | Visitor shares business needs, preferences, or feedback | Store structured data for the business to review/act on later |
-| `navigate_section` | Visitor asks about a section/feature | Return section anchor for client-side scroll |
+| `navigate` | Visitor asks about a section/page | Navigate to a page or scroll to section |
+
+**Page-specific actions (configured per client site):**
+
+| Page type | Action | Effect |
+|-----------|--------|--------|
+| Product listing | `filter_products` | Apply filters on the product grid |
+| Product detail | `add_to_cart` | Add the current product to cart |
+| Product detail | `check_availability` | Query inventory for size/color/stock |
+| Checkout | `apply_coupon` | Surface or apply a discount code |
+| Dashboard | `run_report` | Trigger a report generation |
+| Blog/article | `find_related` | Surface related content |
+| Healthcare portal | `check_symptoms` | Run symptom checker flow |
+| Restaurant | `place_order` | Start order flow |
+| Real estate | `schedule_viewing` | Book a property viewing |
+
+**Widget JavaScript API (`src/lib/chatbot/widget-api.ts`):**
+```typescript
+interface PageAction {
+  name: string;
+  description: string;       // Included in system prompt so LLM knows what the action does
+  handler: (data: unknown) => void | Promise<void>;  // Runs on host site's JS
+  requiresConfirmation?: boolean;  // Ask visitor before executing
+}
+
+interface PageContext {
+  pageType: string;           // e.g., "product-detail", "checkout", "landing"
+  pageData?: Record<string, unknown>;  // e.g., { productId, productName, price }
+  actions: PageAction[];
+}
+
+window.kayphiChat.setPageContext(context: PageContext): void;
+```
+
+**Dashboard configuration:**
+- Define global actions (available on all pages)
+- Define page-type templates with default actions
+- Custom actions per specific page
+- Action permissions — which actions require visitor confirmation before executing
 
 ### E.5b: Information Capture System
 
