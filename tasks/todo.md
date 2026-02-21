@@ -206,15 +206,19 @@ Research and define pricing strategy for kAyphI's chatbot product and all add-on
 
 ---
 
-## Phase B: Infrastructure Setup
-- [ ] Upgrade Next.js 14 → 15 (per approved design doc)
-- [ ] Install pre-approved dependencies (Supabase, shadcn/ui, RHF, Zod, Lucide)
-- [ ] Initialize shadcn/ui (`npx shadcn-ui init`)
-- [ ] Create `.env.example` with all placeholder keys
-- [ ] Add `Dockerfile` and `docker-compose.yml` for local dev
+## Phase B: Infrastructure Setup ← NEXT
+**Design:** `docs/plans/2026-02-21-phase-b-infrastructure-design.md`
+**Implementation plan:** `docs/plans/2026-02-21-phase-b-implementation-plan.md` (27 tasks, Codex-reviewed)
+- [ ] Upgrade Next.js 14 → 15 + React 18 → 19
+- [ ] Migrate framer-motion → motion (React 19 compat)
+- [ ] Install Phase B deps: @supabase/supabase-js, @supabase/ssr, zod
+- [ ] Initialize shadcn/ui (config + cn helper only, no components)
+- [ ] Create `.env.example` with placeholder keys
 - [ ] Set up Supabase clients (`src/lib/supabase/client.ts`, `server.ts`)
-- [ ] Database migrations (profiles, conversations, messages, workflows, workflow_runs, analytics_events)
-- [ ] RLS policies (users can only CRUD their own rows)
+- [ ] Database migrations (profiles, conversations, messages, knowledge_base, bookings, workflows, workflow_runs, analytics_events)
+- [ ] RLS policies (owner CRUD + public INSERT/SELECT where needed for chatbot)
+- [ ] Route group restructure: `(marketing)`, `(auth)`, `(dashboard)`
+- ~~[ ] Add Dockerfile and docker-compose.yml~~ (deferred — no value for hosted Supabase + single Next.js app)
 
 ## Phase C: Auth System
 - [ ] Supabase Auth integration (email/password + Google OAuth)
@@ -272,13 +276,18 @@ Pre-approved (2026-02-14 brainstorming session):
 `react-hook-form`, `@hookform/resolvers`, `zod`, `lucide-react`
 shadcn/ui components are copied into the project (not a dependency).
 
+Approved (2026-02-21 Phase B design session):
+`motion` (replaces `framer-motion` for React 19 compatibility)
+`clsx`, `tailwind-merge` (transitive deps of shadcn/ui init)
+
 Any additional dependencies require explicit user approval per SECURITY.md.
 
 ## Assumptions
 - Rebuild target started as single-page landing site on `/`.
 - Full product extends to multi-page SaaS with auth, chatbot, workflows, analytics.
 - Substitute assets are acceptable where exact originals are unavailable.
-- Docker-first development for all phases.
+- Hosted Supabase for auth + DB; no Docker (deferred — add if needed later).
+- Dependencies installed per-phase, not all at once.
 
 ## Previous Review (Phase 0 / Codex Build)
 - Result: completed from-scratch single-page rebuild with matching section order, copy structure, pricing toggle behavior, FAQ accordion behavior, sticky nav, and floating dock actions.
@@ -311,4 +320,4 @@ Any additional dependencies require explicit user approval per SECURITY.md.
   - All image areas still use gradient placeholders (requires design assets).
   - Services interactive mockup illustrations not yet built.
   - 3D orb remains CSS rings.
-- Next: Phase B (Infrastructure Setup) or asset sourcing for remaining Phase A items.
+- Next: Phase B (Infrastructure Setup) — design approved 2026-02-21, implementation plan written and Codex-reviewed.

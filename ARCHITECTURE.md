@@ -6,6 +6,7 @@ This document describes the actual project structure and planned extensions for 
 
 For visual design decisions, see [DESIGN.md](DESIGN.md).
 For the full product roadmap, see [docs/plans/2026-02-14-full-product-plan.md](docs/plans/2026-02-14-full-product-plan.md).
+For the Phase B infrastructure plan, see [docs/plans/2026-02-21-phase-b-implementation-plan.md](docs/plans/2026-02-21-phase-b-implementation-plan.md).
 
 ---
 
@@ -34,7 +35,7 @@ For the full product roadmap, see [docs/plans/2026-02-14-full-product-plan.md](d
 | Charts | Recharts (`recharts`) | Pre-approved | Analytics visualizations |
 | Forms | React Hook Form + Zod (`react-hook-form`, `@hookform/resolvers`, `zod`) | Pre-approved | Form handling + validation |
 | Icons | Lucide React (`lucide-react`) | **Installed** | SVG icon system |
-| Container | Docker + docker-compose | Phase B | Development environment |
+| Container | Docker + docker-compose | Deferred | Development environment (not needed for hosted Supabase + single Next.js app) |
 
 All planned dependencies were pre-approved during the 2026-02-14 brainstorming session. Any additional dependencies require explicit user approval per SECURITY.md.
 
@@ -277,9 +278,9 @@ API routes (additional layer)
 
 **Supabase clients:**
 - `src/lib/supabase/client.ts` — browser client using `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `src/lib/supabase/server.ts` — server client using `NEXT_PUBLIC_SUPABASE_ANON_KEY` with user session for RLS
+- `src/lib/supabase/server.ts` — server client using `createServerClient` from `@supabase/ssr`, reads cookies via `next/headers`, uses anon key with user session for RLS
 
-**Security invariant:** The service role key is never used in user-facing API routes. All user data operations use the authenticated user's session token with RLS enforcement.
+**Security invariant:** The service role key is never used in user-facing API routes. All user data operations use the authenticated user's session token with RLS enforcement. Public API routes (chatbot, bookings) use the anon role without an auth session.
 
 ---
 
