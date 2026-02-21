@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Check, Scale } from "lucide-react";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { GlassCard } from "@/components/ui/GlassCard";

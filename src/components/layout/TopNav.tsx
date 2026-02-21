@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { motion, useMotionValueEvent, useScroll } from "framer-motion";
+import { motion, useMotionValueEvent, useScroll } from "motion/react";
 import type { LandingNavItem } from "@/content/landing";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { ActionButton } from "@/components/ui/ActionButton";
