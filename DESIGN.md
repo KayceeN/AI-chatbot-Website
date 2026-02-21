@@ -96,7 +96,7 @@ All reusable primitives live in `src/components/ui/`:
 
 ### Motion System
 
-Defined in `src/lib/motion.ts`. Currently uses Framer Motion 11.3.x (migrating to Motion 12.x in Phase B for React 19 compatibility — imports change from `"framer-motion"` to `"motion/react"`).
+Defined in `src/lib/motion.ts`. Uses Motion 12.x (imports from `"motion/react"`, upgraded from Framer Motion in Phase B for React 19 compatibility).
 
 **Presets (`MotionPreset` type):**
 

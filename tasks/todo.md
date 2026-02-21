@@ -206,18 +206,18 @@ Research and define pricing strategy for kAyphI's chatbot product and all add-on
 
 ---
 
-## Phase B: Infrastructure Setup ← NEXT
+## Phase B: Infrastructure Setup (Complete — PR pending)
 **Design:** `docs/plans/2026-02-21-phase-b-infrastructure-design.md`
 **Implementation plan:** `docs/plans/2026-02-21-phase-b-implementation-plan.md` (27 tasks, Codex-reviewed)
-- [ ] Upgrade Next.js 14 → 15 + React 18 → 19
-- [ ] Migrate framer-motion → motion (React 19 compat)
-- [ ] Install Phase B deps: @supabase/supabase-js, @supabase/ssr, zod
-- [ ] Initialize shadcn/ui (config + cn helper only, no components)
-- [ ] Create `.env.example` with placeholder keys
-- [ ] Set up Supabase clients (`src/lib/supabase/client.ts`, `server.ts`)
-- [ ] Database migrations (profiles, conversations, messages, knowledge_base, bookings, workflows, workflow_runs, analytics_events)
-- [ ] RLS policies (owner CRUD + public INSERT/SELECT where needed for chatbot)
-- [ ] Route group restructure: `(marketing)`, `(auth)`, `(dashboard)`
+- [x] Upgrade Next.js 14 → 15 + React 18 → 19
+- [x] Migrate framer-motion → motion (React 19 compat)
+- [x] Install Phase B deps: @supabase/supabase-js, @supabase/ssr, zod
+- [x] Initialize shadcn/ui (config + cn helper only, no components)
+- [x] Create `.env.example` with placeholder keys
+- [x] Set up Supabase clients (`src/lib/supabase/client.ts`, `server.ts`)
+- [x] Database migrations (profiles, conversations, messages, knowledge_base, bookings, workflows, workflow_runs, analytics_events)
+- [x] RLS policies (owner CRUD + public INSERT/SELECT where needed for chatbot)
+- [x] Route group restructure: `(marketing)`, `(auth)`, `(dashboard)`
 - ~~[ ] Add Dockerfile and docker-compose.yml~~ (deferred — no value for hosted Supabase + single Next.js app)
 
 ## Phase C: Auth System
