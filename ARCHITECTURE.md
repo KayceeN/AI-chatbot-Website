@@ -7,12 +7,13 @@ This document describes the actual project structure and planned extensions for 
 For visual design decisions, see [DESIGN.md](DESIGN.md).
 For the full product roadmap, see [docs/plans/2026-02-14-full-product-plan.md](docs/plans/2026-02-14-full-product-plan.md).
 For the Phase B infrastructure plan, see [docs/plans/2026-02-21-phase-b-implementation-plan.md](docs/plans/2026-02-21-phase-b-implementation-plan.md).
+For the Phase C auth design, see [docs/plans/2026-02-21-phase-c-auth-design.md](docs/plans/2026-02-21-phase-c-auth-design.md).
 
 ---
 
 ## Tech Stack
 
-### Current (Phase B)
+### Current (Phase C)
 
 | Layer | Technology | Version | Purpose |
 |-------|-----------|---------|---------|
@@ -22,7 +23,8 @@ For the Phase B infrastructure plan, see [docs/plans/2026-02-21-phase-b-implemen
 | Animation | Motion | 12.x | Scroll reveals, transitions (renamed from Framer Motion) |
 | Auth & DB | Supabase (`@supabase/supabase-js`, `@supabase/ssr`) | Latest | Auth, PostgreSQL, RLS, real-time |
 | Validation | Zod | Latest | Schema validation |
-| UI Components | shadcn/ui | Config only (no components installed yet) | Accessible primitives |
+| Forms | React Hook Form + @hookform/resolvers | Latest | Auth forms, dashboard forms |
+| UI Components | shadcn/ui (Input, Button, Label installed) | Latest | Accessible primitives |
 | Icons | Lucide React (`lucide-react`) | Latest | SVG icon system |
 | Unit testing | Vitest | 2.0.x | Component tests |
 | E2E testing | Playwright | 1.46.x | Browser tests |
@@ -34,7 +36,7 @@ For the Phase B infrastructure plan, see [docs/plans/2026-02-21-phase-b-implemen
 |-------|-----------|--------|---------|
 | AI | OpenAI GPT via Vercel AI SDK (`ai`, `openai`) | Pre-approved | Chatbot, workflow AI processing |
 | Charts | Recharts (`recharts`) | Pre-approved | Analytics visualizations |
-| Forms | React Hook Form (`react-hook-form`, `@hookform/resolvers`) | Pre-approved | Form handling |
+| Forms | React Hook Form (`react-hook-form`, `@hookform/resolvers`) | **Installed (Phase C)** | Form handling |
 | Container | Docker + docker-compose | Deferred | Development environment (not needed for hosted Supabase + single Next.js app) |
 
 All planned dependencies were pre-approved during the 2026-02-14 brainstorming session. Any additional dependencies require explicit user approval per SECURITY.md.
@@ -51,9 +53,22 @@ src/
 │   ├── layout.tsx              # Root layout (Manrope font, metadata, viewport-fit: cover)
 │   ├── (marketing)/
 │   │   └── page.tsx            # Landing page (composes all section components)
-│   ├── (auth)/                 # Empty — Phase C
-│   └── (dashboard)/            # Empty — Phase D
+│   ├── (auth)/
+│   │   ├── layout.tsx          # Auth layout (centered, dark bg)
+│   │   ├── login/
+│   │   │   ├── page.tsx        # Login page (Suspense wrapper)
+│   │   │   └── login-form.tsx  # Login form (email/password, RHF + Zod)
+│   │   ├── signup/
+│   │   │   └── page.tsx        # Signup form (email/password + name)
+│   │   └── callback/
+│   │       └── route.ts        # OAuth/email confirmation callback
+│   └── dashboard/
+│       ├── layout.tsx          # Protected layout (getUser() gate)
+│       ├── page.tsx            # Dashboard placeholder
+│       └── logout-button.tsx   # Client-side logout
 ├── components/
+│   ├── forms/
+│   │   └── FormField.tsx       # Labeled input with RHF + error display
 │   ├── layout/
 │   │   └── TopNav.tsx          # Sticky navigation bar
 │   ├── sections/
@@ -74,7 +89,10 @@ src/
 │   └── ui/
 │       ├── ActionButton.tsx    # CTA button with ArrowUpRight icon
 │       ├── BadgePill.tsx       # Section label pill (accepts ReactNode icon)
+│       ├── button.tsx          # shadcn Button
 │       ├── GlassCard.tsx       # Frosted glass card
+│       ├── input.tsx           # shadcn Input
+│       ├── label.tsx           # shadcn Label
 │       ├── LogoMark.tsx        # Brand logo
 │       ├── Reveal.tsx          # Scroll-triggered animation wrapper
 │       ├── SectionHeading.tsx  # Badge + title + subtitle (passes icon to BadgePill)
@@ -84,12 +102,17 @@ src/
 ├── lib/
 │   ├── motion.ts               # Motion presets and timing
 │   ├── utils.ts                # Utility functions (cn, clamp)
-│   └── supabase/
-│       ├── client.ts           # Browser client (anon key)
-│       └── server.ts           # Server client (cookie-based auth)
+│   ├── supabase/
+│   │   ├── client.ts           # Browser client (anon key)
+│   │   └── server.ts           # Server client (cookie-based auth)
+│   └── validations/
+│       └── auth.ts             # Zod schemas (login, signup, safeRedirect)
+├── middleware.ts                # Session refresh + route protection
 └── styles/
     └── globals.css             # Tailwind directives, CSS custom properties, orb-rings
 ```
+
+**Note:** The dashboard uses `dashboard/` (actual path segment), not a `(dashboard)/` route group. Route groups strip the group name from URLs, so `(dashboard)/page.tsx` would resolve to `/` — conflicting with `(marketing)/page.tsx`. Using `dashboard/` as a real segment means pages resolve to `/dashboard/*`.
 
 ### Planned (after Phase G)
 
@@ -102,7 +125,7 @@ src/
 │   │   ├── login/page.tsx
 │   │   ├── signup/page.tsx
 │   │   └── callback/route.ts          # OAuth callback handler
-│   ├── (dashboard)/
+│   ├── dashboard/                        # Actual path segment (not route group — avoids / conflict)
 │   │   ├── layout.tsx                  # Dashboard shell (sidebar nav)
 │   │   ├── page.tsx                    # Dashboard overview
 │   │   ├── chat/page.tsx               # Chatbot management (knowledge base, config)
@@ -244,38 +267,53 @@ This type defines:
 
 ## Routing
 
-### Current
-Route groups split the app into three concerns (route groups do not affect URL paths):
+### Current (Phase C)
 
-| Group | Path prefix | Layout | Auth required |
-|-------|-------------|--------|---------------|
+| Group/Segment | Path | Layout | Auth required |
+|---------------|------|--------|---------------|
 | `(marketing)` | `/` | TopNav + Footer | No |
-| `(auth)` | `/login`, `/signup`, `/callback` | Centered card | No (redirects if already logged in) |
-| `(dashboard)` | `/chat`, `/workflows`, `/analytics`, `/settings` | Sidebar + TopBar | Yes (middleware-enforced) |
+| `(auth)` | `/login`, `/signup`, `/callback` | Centered dark card, no nav | No (redirects to dashboard if already logged in) |
+| `dashboard/` | `/dashboard` | Header + content area | Yes (`getUser()` gate in layout + middleware redirect) |
+
+**Note:** The dashboard uses `dashboard/` as an actual path segment, not a `(dashboard)` route group. This avoids a routing conflict where `(dashboard)/page.tsx` would resolve to `/` (same as `(marketing)/page.tsx`). Future dashboard sub-routes go under `dashboard/`: e.g., `dashboard/chat/page.tsx` → `/dashboard/chat`.
 
 ### Planned
-Additional routes within these groups will be added in Phases C–G.
+Additional routes within `dashboard/` will be added in Phases D–G: `/dashboard/chat`, `/dashboard/workflows`, `/dashboard/analytics`, `/dashboard/settings`.
 
 ---
 
-## Authentication Architecture (Planned)
+## Authentication Architecture (Current — Phase C)
+
+**Middleware** (`src/middleware.ts`) is a convenience layer, not a security boundary:
+- Refreshes the Supabase session cookie on every matched request
+- Redirects unauthenticated users from `/dashboard/*` to `/login?next={path}`
+- Redirects authenticated users from `/login` or `/signup` to `/dashboard`
+- Matcher: `["/dashboard/:path*", "/login", "/signup"]`
+
+**Security gate:** The real auth check is `getUser()` in `src/app/dashboard/layout.tsx`. This server-side call verifies the session and redirects to `/login` if invalid. API routes (future) must also independently call `getUser()`.
+
+**Redirect safety:** The `?next=` parameter is validated by `safeRedirect()` in `src/lib/validations/auth.ts` — rejects null, empty, protocol-relative (`//`), and absolute URLs to prevent open redirects.
 
 ```
 Browser request
     │
     ▼
-middleware.ts
-    ├── Is route in (dashboard)?
-    │   ├── Yes → validate Supabase session
-    │   │   ├── Valid → continue to page
-    │   │   ├── Expired → attempt refresh
-    │   │   │   ├── Refreshed → continue
-    │   │   │   └── Failed → redirect to /login
-    │   │   └── No session → redirect to /login
-    │   └── No → continue (public route)
+middleware.ts (convenience only)
+    ├── Refresh session cookie
+    ├── Is route /dashboard/*?
+    │   ├── No session → redirect to /login?next={path}
+    │   └── Has session → continue
+    ├── Is route /login or /signup?
+    │   ├── Has session → redirect to /dashboard
+    │   └── No session → continue
+    └── Other routes → continue
     │
     ▼
-API routes (additional layer)
+Dashboard layout (security gate)
+    └── getUser() — reject if no valid session
+    │
+    ▼
+API routes (additional layer — future)
     └── Each API route independently calls getUser()
         └── Never trust middleware alone for API auth
 ```
@@ -586,12 +624,18 @@ The same chatbot architecture is the product kAyphI offers to other businesses:
 
 | Type | Tool | Config | Location |
 |------|------|--------|----------|
-| Unit/Integration | Vitest + Testing Library | `vitest.config.ts` | `tests/landing-page.test.tsx` |
-| E2E | Playwright | `playwright.config.ts` | `tests/e2e/landing.spec.ts` |
+| Unit/Integration | Vitest + Testing Library | `vitest.config.ts` | `tests/*.test.ts(x)` |
+| E2E | Playwright | `playwright.config.ts` | `tests/e2e/*.spec.ts` |
 
-**Test files:**
+**Unit test files:**
 - `tests/landing-page.test.tsx` — core copy, section order, nav items
 - `tests/hero-media.test.tsx` — poster/video lazy-load, reduced motion, crossfade
+- `tests/validations-auth.test.ts` — Zod schemas (login, signup), safeRedirect helper
+- `tests/auth-forms.test.tsx` — login/signup form rendering, validation, submit flows (mocked Supabase)
+
+**E2E test files:**
+- `tests/e2e/landing.spec.ts` — landing page smoke tests
+- `tests/e2e/auth.spec.ts` — auth page rendering, validation, navigation, redirect protection
 
 **Test setup:** `tests/setup.tsx` — Jest DOM matchers, IntersectionObserver/matchMedia mocks.
 **Path aliases:** Vitest resolves `@/*` → `src/*` via config.
