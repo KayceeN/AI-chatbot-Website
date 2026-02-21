@@ -283,7 +283,7 @@ The chatbot is kAyphI's core product. It is a **public-facing** widget embedded 
   4. Domain boundaries and topic scope (configurable per business)
   5. Three-tier response rules:
      - **Tier 1 (KB match):** Answer from knowledge base context — grounded, highest confidence
-     - **Tier 2 (Domain-relevant, no KB match):** Answer using general LLM knowledge within the business domain, delivered in the same tone and personality as Tier 1 — no hedging or "generally speaking" prefixes (e.g., a dental office chatbot confidently explains what a root canal is even without a KB entry). May follow up with a natural redirect like "Would you like to book a consultation?"
+     - **Tier 2 (Domain-relevant, no KB match):** Answer using general LLM knowledge within the business domain, delivered in the same tone and personality as Tier 1 — no hedging or "generally speaking" prefixes (e.g., a dental office chatbot confidently explains what a root canal is even without a KB entry). The chatbot does **not** proactively suggest actions — it answers the question and waits for the visitor to ask for anything further.
      - **Tier 3 (Off-topic):** Politely decline and redirect to the business's services (e.g., "Who won the Super Bowl?" → "I'm here to help with dental questions! Is there anything about our services I can help with?")
   6. Guardrails: never fabricate business-specific claims (e.g., don't invent pricing or staff names)
   7. Chatbot personality injection (tone, formality, name/persona, greeting style, emoji usage, verbosity) — applies to all tiers uniformly
@@ -357,12 +357,13 @@ Each chatbot deployment has a **configurable personality** that governs all comm
 **`src/lib/chatbot/actions.ts`:**
 - Action registry pattern — each action has a name, description, trigger detection, and handler
 - LLM uses function calling or structured output to signal action intent
-- Actions are **page-aware** — the chatbot receives page context and only offers actions relevant to the current page
+- Actions are **page-aware** — the chatbot receives page context and can only execute actions registered for the current page
+- **The chatbot never proactively suggests or offers actions.** It detects intent from the visitor's messages and executes the appropriate action when the visitor asks for it — never unprompted.
 
 **Page context flow:**
 1. Host website calls `window.kayphiChat.setPageContext(...)` with current page type, page data, and available actions
 2. Widget sends page context to `/api/chat` alongside the conversation messages
-3. System prompt includes the available actions for this page — the LLM only offers what's registered
+3. System prompt includes the available actions for this page — the LLM can only execute what's registered
 4. When the LLM triggers an action, the widget invokes the client-side handler registered by the host page
 
 **Universal actions (available on every page):**
@@ -480,15 +481,12 @@ Implementation: The booking API route triggers the email workflow after successf
 **`src/components/chat/ChatInput.tsx`:**
 - Text input with send button
 - Enter to send, Shift+Enter for newline
-- Quick reply chips surfaced contextually by the chatbot
+- Disabled state while assistant is streaming
 
 **`src/components/chat/BookingCalendar.tsx`:**
 - Inline date/time picker triggered by booking action
 - Shows available slots
 - Submits to `/api/bookings`
-
-**`src/components/chat/QuickReplyChip.tsx`:**
-- Suggested response buttons (e.g., "Book a demo", "See pricing", "Learn more about chatbots")
 
 ### E.8: Voice Mode
 
@@ -730,9 +728,8 @@ Auto-tracked events:
 | `src/content/knowledge-base.ts` | E | Default kAyphI knowledge base seed data |
 | `src/components/chat/ChatWidget.tsx` | E | Floating chat widget (public, marketing site) |
 | `src/components/chat/ChatBubble.tsx` | E | Message bubble component |
-| `src/components/chat/ChatInput.tsx` | E | Chat text input with send + quick replies |
+| `src/components/chat/ChatInput.tsx` | E | Chat text input with send button |
 | `src/components/chat/BookingCalendar.tsx` | E | Inline appointment picker |
-| `src/components/chat/QuickReplyChip.tsx` | E | Suggested response buttons |
 | `src/components/chat/VoiceButton.tsx` | E | Microphone toggle for voice input |
 | `src/components/chat/AudioPlayer.tsx` | E | Inline audio playback for voice responses |
 | `src/components/chat/ImageMessage.tsx` | E | Inline image display (stored or generated) |

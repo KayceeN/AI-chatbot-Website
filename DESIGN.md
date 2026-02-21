@@ -225,9 +225,8 @@ Exact hex values to be determined during Phase D implementation. Will be added t
 |-----------|---------|
 | `ChatWidget` | Floating chat bubble + expandable panel on marketing site (no auth required) |
 | `ChatBubble` | Individual message bubble (user/assistant) with avatar and typing indicator |
-| `ChatInput` | Text input with send button, auto-resize, suggested quick-reply chips |
-| `BookingCalendar` | Inline calendar for appointment scheduling, triggered by chatbot action |
-| `QuickReplyChip` | Suggested response buttons the chatbot can surface contextually |
+| `ChatInput` | Text input with send button, auto-resize, disabled state while streaming |
+| `BookingCalendar` | Inline calendar for appointment scheduling, triggered when visitor requests booking |
 | `VoiceButton` | Microphone toggle for voice input (records → transcribes → sends as text) |
 | `AudioPlayer` | Inline audio playback for assistant voice responses (OpenAI TTS) |
 | `LanguageSelector` | Optional dropdown for visitor to choose preferred language |

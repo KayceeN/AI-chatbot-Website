@@ -121,9 +121,8 @@ src/
 │   ├── chat/                           # Public chatbot widget components
 │   │   ├── ChatWidget.tsx              # Floating bubble + expandable panel
 │   │   ├── ChatBubble.tsx              # Individual message bubble
-│   │   ├── ChatInput.tsx               # Text input with send + quick replies
-│   │   ├── BookingCalendar.tsx         # Inline appointment picker
-│   │   └── QuickReplyChip.tsx          # Suggested response buttons
+│   │   ├── ChatInput.tsx               # Text input with send button
+│   │   └── BookingCalendar.tsx         # Inline appointment picker
 │   ├── ui/                             # Shared primitives (existing + shadcn/ui)
 │   │   └── ...
 │   ├── dashboard/                      # Dashboard-specific components
@@ -369,7 +368,7 @@ POST /api/chat
     ├── 4. Build system prompt (business identity + retrieved context)
     ├── 5. Stream response via Vercel AI SDK + OpenAI
     ├── 6. Detect action intents (booking, contact, etc.)
-    │   └── If booking intent → surface BookingCalendar inline
+    │   └── If visitor requests booking → present BookingCalendar inline
     ├── 7. Persist conversation + messages to Supabase
     └── 8. Log analytics event
 ```
@@ -401,7 +400,7 @@ The chatbot uses a **domain-aware** response strategy, not a strict knowledge-ba
 
 **Tier 2 behavior:**
 - Tier 2 answers are delivered in the **same tone and personality** as Tier 1 — no hedging, no "generally speaking" prefixes. The chatbot speaks as the business, maintaining the configured personality at all times.
-- The chatbot may follow up with a natural redirect like "Would you like to book a consultation to discuss your specific situation?"
+- The chatbot does **not** proactively suggest actions (e.g., it never unprompted says "Would you like to book a consultation?"). It simply answers the question in the business's voice and waits for the visitor to ask for anything further.
 - Business owners can toggle Tier 2 on/off in the dashboard (some may prefer strict KB-only answers)
 
 ### Chatbot Personality
@@ -422,13 +421,15 @@ Each chatbot deployment has a **configurable personality** that defines how it c
 
 | Personality | Response to "What is a root canal?" |
 |------------|--------------------------------------|
-| Clinical (dental office) | "A root canal is a procedure to repair and save a tooth that is badly decayed or infected. The procedure involves removing the damaged pulp, cleaning the inside of the tooth, and sealing it. If you're experiencing tooth pain, we'd love to help — would you like to schedule an appointment?" |
-| Friendly (dental office) | "Great question! A root canal is basically how we save a tooth that's been damaged or infected. We clean out the inside, fix it up, and seal it so it's good as new. Nothing to worry about! Want to book a visit so we can take a look?" |
-| Playful (dental office) | "Ah, root canals! They sound scary but they're actually tooth-savers! Think of it as a deep clean for the inside of your tooth. We remove the ouchie parts, fix everything up, and seal it tight. Want to come in and let us work our magic?" |
+| Clinical (dental office) | "A root canal is a procedure to repair and save a tooth that is badly decayed or infected. The procedure involves removing the damaged pulp, cleaning the inside of the tooth, and sealing it. If you have any other dental questions, feel free to ask." |
+| Friendly (dental office) | "Great question! A root canal is basically how we save a tooth that's been damaged or infected. We clean out the inside, fix it up, and seal it so it's good as new. Nothing to worry about! Let me know if you have any other questions." |
+| Playful (dental office) | "Ah, root canals! They sound scary but they're actually tooth-savers! Think of it as a deep clean for the inside of your tooth. We remove the ouchie parts, fix everything up, and seal it tight. Anything else on your mind?" |
 
 ### Action System (Page-Aware + Extensible)
 
-The chatbot can perform actions beyond answering questions. Actions are **page-aware** — the chatbot knows what page the visitor is on and what functionality is available, and only offers actions relevant to the current context.
+The chatbot can perform actions beyond answering questions. Actions are **page-aware** — the chatbot knows what page the visitor is on and what functionality is available, and can execute actions relevant to the current context when the visitor's intent calls for it.
+
+**Behavioral rule:** The chatbot **never proactively suggests or offers actions**. It responds to whatever the visitor asks and silently determines whether an action should be executed based on the visitor's intent. For example, if a visitor says "I'd like to book an appointment," the chatbot initiates the booking flow. But it never unprompted says "Would you like to book an appointment?" or pushes action suggestions.
 
 **How page awareness works:**
 ```
@@ -448,7 +449,7 @@ System prompt is built with:
     └── page-specific data (what the visitor is looking at)
 ```
 
-The host website registers available actions per page via the widget's JavaScript API. The chatbot only offers actions that are available on the current page.
+The host website registers available actions per page via the widget's JavaScript API. The chatbot can only execute actions that are registered for the current page — it never fabricates or assumes actions that aren't registered.
 
 **Universal actions (available on every page):**
 | Action | Trigger | Effect |
