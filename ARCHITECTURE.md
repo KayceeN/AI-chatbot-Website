@@ -484,11 +484,13 @@ The chatbot can communicate in **multiple languages** — both text and voice.
 
 The chatbot supports images in conversations — showing relevant visuals, understanding visitor-uploaded photos, and optionally generating images on demand.
 
-| Tier | Capability | Cost impact | How it works |
-|------|-----------|-------------|-------------|
-| **1. Stored images** | Serve images from the knowledge base | **No extra LLM cost** — static file serving | Business uploads images (procedure diagrams, product photos, office images) as knowledge base entries. Chatbot displays them when the conversation context matches. |
-| **2. Vision (image input)** | Understand images visitors send | **Included in GPT-4o-mini** — images convert to tokens | Visitor uploads a photo (e.g., "What's wrong with my tooth?"). The model analyzes it using its built-in vision capability. No separate API call needed. |
-| **3. Image generation** | Generate new images on the fly via DALL-E | **Additional cost** — ~$0.04–0.12 per image (DALL-E 3) | When no stored image exists and a visual would help, the chatbot generates one. Business owners can enable/disable this and set a per-conversation or daily budget cap. |
+| Tier | Capability | Pricing | How it works |
+|------|-----------|---------|-------------|
+| **1. Stored images** | Serve images from the knowledge base | **Included in base plan** — static file serving, no LLM cost | Business uploads images (procedure diagrams, product photos, office images) as knowledge base entries. Chatbot displays them when the conversation context matches. |
+| **2. Vision (image input)** | Understand images visitors send | **Paid add-on** — uses GPT-4o-mini vision tokens | Visitor uploads a photo (e.g., "What's wrong with my tooth?"). The model analyzes it using its built-in vision capability. Higher token usage per message. |
+| **3. Image generation** | Generate new images on the fly via DALL-E | **Paid add-on (higher tier)** — ~$0.04–0.12 per image (DALL-E 3) | When no stored image exists and a visual would help, the chatbot generates one. Per-image cost passed through or bundled into plan pricing. |
+
+**Pricing model:** Stored images (Tier 1) are included in every plan. Vision (Tier 2) and image generation (Tier 3) are paid add-ons that clients opt into at higher pricing tiers. See the pricing research task in `tasks/todo.md` for the full pricing strategy work.
 
 **Priority order:** The chatbot always prefers Tier 1 (stored) over Tier 3 (generated). If a relevant image exists in the knowledge base, it is served directly. Generation is a fallback for when no stored image fits.
 
@@ -498,10 +500,10 @@ The chatbot supports images in conversations — showing relevant visuals, under
 - Business owners upload and manage images through the dashboard knowledge base editor
 
 **Dashboard controls:**
-- Toggle image generation on/off per chatbot deployment
-- Set budget cap for image generation (per conversation, daily, or monthly)
-- Upload/manage stored images in the knowledge base
-- Toggle vision (image input from visitors) on/off
+- Upload/manage stored images in the knowledge base (all plans)
+- Vision toggle — enable/disable visitor image uploads (requires paid add-on)
+- Image generation toggle — enable/disable DALL-E generation (requires paid add-on)
+- Budget cap for image generation (per conversation, daily, or monthly)
 
 ### What kAyphI Sells to Clients
 
@@ -597,4 +599,4 @@ OPENAI_API_KEY=<your-openai-key>
 3. **Typed content.** All marketing copy flows through `LandingPageContent` — no hardcoded strings in components.
 4. **Component composition.** Sections compose primitives (`GlassCard`, `SectionShell`, etc.) — no one-off styling.
 5. **Server-only secrets.** `SUPABASE_SERVICE_ROLE_KEY` and `OPENAI_API_KEY` never appear in client bundles.
-6. **Domain-aware responses.** The chatbot answers from knowledge base context (Tier 1), general domain knowledge (Tier 2), or politely declines off-topic questions (Tier 3). It never fabricates business-specific claims — Tier 2 answers are clearly framed as general information.
+6. **Domain-aware responses.** The chatbot answers from knowledge base context (Tier 1), general domain knowledge in the business's own personality and tone (Tier 2), or politely declines off-topic questions (Tier 3). It never fabricates business-specific claims (e.g., inventing pricing, staff names, or policies not in the KB).

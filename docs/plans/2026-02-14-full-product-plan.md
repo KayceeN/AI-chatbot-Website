@@ -485,25 +485,29 @@ The chatbot communicates in **multiple languages** — text and voice.
 
 The chatbot supports images in conversations — showing relevant visuals, understanding visitor uploads, and optionally generating images.
 
-**Tier 1 — Stored images (no extra LLM cost):**
+**Tier 1 — Stored images (included in base plan):**
 - Business uploads images to the knowledge base (procedure diagrams, product photos, office images)
 - Images stored in Supabase Storage, referenced in `knowledge_base` table with `type: "image"` and metadata (topic, description, alt text)
 - Chatbot retrieves and displays matching images inline when conversation context is relevant
 - Always preferred over generation — zero marginal cost
+- Available to all clients on every plan
 
-**Tier 2 — Vision / image input (included in GPT-4o-mini):**
+**Tier 2 — Vision / image input (paid add-on):**
 - Visitor uploads a photo (e.g., dental patient sends a photo asking "What's wrong?")
-- Image sent to GPT-4o-mini via its built-in vision capability — images are converted to tokens, charged at standard token rates
+- Image sent to GPT-4o-mini via its built-in vision capability — images converted to tokens, higher per-message cost
 - No separate API call or model switch needed
+- Requires paid add-on — clients who want visitor image uploads pay for the increased token usage
 - Business owners can toggle visitor image uploads on/off
 
-**Tier 3 — Image generation via DALL-E (additional cost):**
+**Tier 3 — Image generation via DALL-E (paid add-on, higher tier than vision):**
 - When no stored image exists and a visual would genuinely help, the chatbot generates one via DALL-E 3
-- Cost: ~$0.04 (1024x1024 standard) to ~$0.12 (1792x1024 HD) per image
+- Our cost: ~$0.04 (1024x1024 standard) to ~$0.12 (1792x1024 HD) per image
+- Requires paid add-on at a higher pricing tier than vision — per-image cost is passed through or bundled into the plan
 - Business owners configure:
-  - Enable/disable image generation entirely
   - Budget cap: per conversation, daily, or monthly limit
   - Quality setting: standard vs HD
+
+**Pricing note:** Exact pricing for vision and image generation add-ons is TBD — see pricing research task in `tasks/todo.md`. Factors to determine: markup on OpenAI costs, bundled vs. usage-based pricing, plan tier boundaries.
 
 **Components:**
 - `ImageMessage` — renders inline images in chat (stored or generated), with alt text and optional expand

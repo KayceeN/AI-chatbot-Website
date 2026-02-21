@@ -176,6 +176,36 @@ Prioritized by recommended implementation order. Based on deep research of top A
 
 ---
 
+## Pricing Research (Pre-Launch — Required Before Phase E Deployment)
+
+Research and define pricing strategy for kAyphI's chatbot product and all add-on capabilities. This determines how the product is packaged and sold.
+
+### Chatbot Product Pricing
+- [ ] Research competitor pricing (Intercom, Drift, Tidio, Chatbase, CustomGPT, etc.)
+- [ ] Define base chatbot plan tiers — what's included at each level (message limits, KB size, conversations/month)
+- [ ] Price the base chatbot plans (Starter, Pro, Enterprise or similar)
+- [ ] Determine pricing model: flat monthly fee vs. usage-based vs. hybrid
+
+### Feature Add-On Pricing
+- [ ] **Voice mode** — price as add-on or include in higher tiers? Cost factors: Whisper API (~$0.006/min), TTS API (~$0.015/1K chars)
+- [ ] **Multilingual** — included or add-on? Cost factors: slightly higher token usage for translation instructions
+- [ ] **Vision (image input)** — price as paid add-on. Cost factors: higher token usage per vision message (~4x text)
+- [ ] **Image generation (DALL-E)** — price as paid add-on (higher tier than vision). Cost factors: ~$0.04–0.12 per generated image
+- [ ] **Booking system** — included or add-on? Cost factors: minimal (DB storage only)
+- [ ] **Information capture / lead extraction** — included or add-on?
+- [ ] **Custom personality** — included or premium-only?
+- [ ] **Custom actions (beyond defaults)** — included or enterprise-only?
+
+### Pricing Model Decisions
+- [ ] Markup strategy on OpenAI costs — what margin on API pass-through?
+- [ ] Usage-based vs. bundled — do clients pay per message, per image, or get a monthly allocation?
+- [ ] Overage pricing — what happens when a client exceeds their plan limits?
+- [ ] Free tier / trial — offer a limited free chatbot for lead generation?
+- [ ] Annual vs. monthly discount structure
+- [ ] Update landing page pricing section (`src/content/landing.ts`) to reflect final product pricing (currently shows agency service pricing, not chatbot product pricing)
+
+---
+
 ## Phase B: Infrastructure Setup
 - [ ] Upgrade Next.js 14 → 15 (per approved design doc)
 - [ ] Install pre-approved dependencies (Supabase, shadcn/ui, RHF, Zod, Lucide)
