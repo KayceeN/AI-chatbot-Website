@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import HomePage from "@/app/page";
+import HomePage from "@/app/(marketing)/page";
 import { landingContent, sectionOrder } from "@/content/landing";
 
 describe("landing page parity", () => {
