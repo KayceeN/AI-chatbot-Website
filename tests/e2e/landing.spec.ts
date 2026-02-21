@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("hero and pricing sections render", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "kAyphI" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "kAyphI" }).first()).toBeVisible();
   await expect(page.getByTestId("hero-poster")).toBeVisible();
   await expect(page.getByTestId("hero-video")).toHaveAttribute("muted", "");
   await expect(page.getByTestId("hero-video")).toHaveAttribute("preload", /none|metadata|auto/);

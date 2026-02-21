@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import type { PropsWithChildren } from "react";
 import type { SectionMotionConfig } from "@/lib/motion";
 import { getPreset, getTransition } from "@/lib/motion";

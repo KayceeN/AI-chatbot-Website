@@ -12,29 +12,29 @@ For the Phase B infrastructure plan, see [docs/plans/2026-02-21-phase-b-implemen
 
 ## Tech Stack
 
-### Current (Phase 0)
+### Current (Phase B)
 
 | Layer | Technology | Version | Purpose |
 |-------|-----------|---------|---------|
-| Framework | Next.js | 14.2.5 | App Router, SSR/SSG |
+| Framework | Next.js | 15.5.x | App Router, SSR/SSG |
 | Language | TypeScript | 5.5.x | Type safety |
 | Styling | Tailwind CSS | 3.4.x | Utility-first CSS |
-| Animation | Framer Motion | 11.3.x | Scroll reveals, transitions |
+| Animation | Motion | 12.x | Scroll reveals, transitions (renamed from Framer Motion) |
+| Auth & DB | Supabase (`@supabase/supabase-js`, `@supabase/ssr`) | Latest | Auth, PostgreSQL, RLS, real-time |
+| Validation | Zod | Latest | Schema validation |
+| UI Components | shadcn/ui | Config only (no components installed yet) | Accessible primitives |
+| Icons | Lucide React (`lucide-react`) | Latest | SVG icon system |
 | Unit testing | Vitest | 2.0.x | Component tests |
 | E2E testing | Playwright | 1.46.x | Browser tests |
-| Runtime | React | 18.2.0 | UI library |
+| Runtime | React | 19.2.x | UI library |
 
-### Planned (Phases A–G)
+### Planned (Phases C–G)
 
 | Layer | Technology | Status | Purpose |
 |-------|-----------|--------|---------|
-| Framework | Next.js **15** | Upgrade planned (Phase B) | Latest App Router features |
-| Auth & DB | Supabase (`@supabase/supabase-js`, `@supabase/ssr`) | Pre-approved | Auth, PostgreSQL, RLS, real-time |
 | AI | OpenAI GPT via Vercel AI SDK (`ai`, `openai`) | Pre-approved | Chatbot, workflow AI processing |
-| UI Components | shadcn/ui (copied, not installed) | Pre-approved | Accessible primitives |
 | Charts | Recharts (`recharts`) | Pre-approved | Analytics visualizations |
-| Forms | React Hook Form + Zod (`react-hook-form`, `@hookform/resolvers`, `zod`) | Pre-approved | Form handling + validation |
-| Icons | Lucide React (`lucide-react`) | **Installed** | SVG icon system |
+| Forms | React Hook Form (`react-hook-form`, `@hookform/resolvers`) | Pre-approved | Form handling |
 | Container | Docker + docker-compose | Deferred | Development environment (not needed for hosted Supabase + single Next.js app) |
 
 All planned dependencies were pre-approved during the 2026-02-14 brainstorming session. Any additional dependencies require explicit user approval per SECURITY.md.
@@ -49,7 +49,10 @@ All planned dependencies were pre-approved during the 2026-02-14 brainstorming s
 src/
 ├── app/
 │   ├── layout.tsx              # Root layout (Manrope font, metadata, viewport-fit: cover)
-│   └── page.tsx                # Landing page (composes all section components)
+│   ├── (marketing)/
+│   │   └── page.tsx            # Landing page (composes all section components)
+│   ├── (auth)/                 # Empty — Phase C
+│   └── (dashboard)/            # Empty — Phase D
 ├── components/
 │   ├── layout/
 │   │   └── TopNav.tsx          # Sticky navigation bar
@@ -79,8 +82,11 @@ src/
 ├── content/
 │   └── landing.ts              # Typed content model (LandingPageContent)
 ├── lib/
-│   ├── motion.ts               # Framer Motion presets and timing
-│   └── utils.ts                # Utility functions (clamp)
+│   ├── motion.ts               # Motion presets and timing
+│   ├── utils.ts                # Utility functions (cn, clamp)
+│   └── supabase/
+│       ├── client.ts           # Browser client (anon key)
+│       └── server.ts           # Server client (cookie-based auth)
 └── styles/
     └── globals.css             # Tailwind directives, CSS custom properties, orb-rings
 ```
@@ -169,7 +175,7 @@ supabase/
 
 ## Page Composition Model
 
-The landing page (`src/app/page.tsx`) follows a composition pattern:
+The landing page (`src/app/(marketing)/page.tsx`) follows a composition pattern:
 
 ```
 page.tsx
@@ -211,7 +217,7 @@ page.tsx (server component, static render)
     └── FooterSection (client: social icons, copyright)
 ```
 
-All section components are `"use client"` due to Framer Motion or React state. The root `page.tsx` is a server component that imports and composes them.
+All section components are `"use client"` due to Motion or React state. The root `page.tsx` is a server component that imports and composes them.
 
 ---
 
@@ -239,10 +245,7 @@ This type defines:
 ## Routing
 
 ### Current
-Single route: `/` (landing page)
-
-### Planned
-Route groups split the app into three concerns:
+Route groups split the app into three concerns (route groups do not affect URL paths):
 
 | Group | Path prefix | Layout | Auth required |
 |-------|-------------|--------|---------------|
@@ -250,7 +253,8 @@ Route groups split the app into three concerns:
 | `(auth)` | `/login`, `/signup`, `/callback` | Centered card | No (redirects if already logged in) |
 | `(dashboard)` | `/chat`, `/workflows`, `/analytics`, `/settings` | Sidebar + TopBar | Yes (middleware-enforced) |
 
-Route groups in Next.js App Router do not affect URL paths — they only organize layouts and middleware scoping.
+### Planned
+Additional routes within these groups will be added in Phases C–G.
 
 ---
 
@@ -284,9 +288,9 @@ API routes (additional layer)
 
 ---
 
-## Database Schema (Planned)
+## Database Schema
 
-Eight tables, all with RLS enabled:
+Eight tables defined in `supabase/migrations/`, all with RLS enabled. Apply via Supabase SQL Editor or `supabase db push`:
 
 ```
 profiles (extends auth.users)
@@ -625,7 +629,8 @@ Defined in `package.json`:
 | `package.json` | Dependencies, scripts |
 | `tsconfig.json` | TypeScript config (strict, path aliases) |
 | `tailwind.config.ts` | Tailwind theme extensions |
-| `next.config.mjs` | Next.js config (reactStrictMode only) |
+| `next.config.ts` | Next.js config (typed, reactStrictMode only) |
+| `components.json` | shadcn/ui configuration |
 | `postcss.config.js` | PostCSS plugins (Tailwind + Autoprefixer) |
 | `vitest.config.ts` | Vitest test runner config |
 | `playwright.config.ts` | Playwright E2E config |
@@ -633,16 +638,18 @@ Defined in `package.json`:
 
 ---
 
-## Environment Variables (Planned)
+## Environment Variables
+
+Defined in `.env.example` (committed). Copy to `.env.local` and fill in real values.
 
 ```env
-# Supabase (required for Phases B+)
-NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
-SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+# Supabase (required)
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-# OpenAI (required for Phase E+)
-OPENAI_API_KEY=<your-openai-key>
+# OpenAI (required for Phase E)
+OPENAI_API_KEY=your-openai-key
 ```
 
 `NEXT_PUBLIC_` prefixed variables are exposed to the browser.

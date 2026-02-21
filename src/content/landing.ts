@@ -42,7 +42,7 @@ export interface LandingPageContent {
     badge: string;
     title: string;
     subtitle: string;
-    ctas: [CTA, CTA];
+    ctas: CTA[];
     quote: string;
     quoteAuthor: string;
     media: HeroMediaConfig;
