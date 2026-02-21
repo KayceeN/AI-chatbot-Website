@@ -9,12 +9,13 @@ For the full product roadmap, see [docs/plans/2026-02-14-full-product-plan.md](d
 For the Phase B infrastructure plan, see [docs/plans/2026-02-21-phase-b-implementation-plan.md](docs/plans/2026-02-21-phase-b-implementation-plan.md).
 For the Phase C auth design, see [docs/plans/2026-02-21-phase-c-auth-design.md](docs/plans/2026-02-21-phase-c-auth-design.md).
 For the Phase D dashboard design, see [docs/plans/2026-02-21-phase-d-dashboard-design.md](docs/plans/2026-02-21-phase-d-dashboard-design.md).
+For the Phase E chatbot design, see [docs/plans/2026-02-21-phase-e-chatbot-design.md](docs/plans/2026-02-21-phase-e-chatbot-design.md).
 
 ---
 
 ## Tech Stack
 
-### Current (Phase D)
+### Current (Phase E)
 
 | Layer | Technology | Version | Purpose |
 |-------|-----------|---------|---------|
@@ -27,6 +28,7 @@ For the Phase D dashboard design, see [docs/plans/2026-02-21-phase-d-dashboard-d
 | Forms | React Hook Form + @hookform/resolvers | Latest | Auth forms, dashboard forms |
 | UI Components | shadcn/ui (Input, Button, Label installed) | Latest | Accessible primitives |
 | Icons | Lucide React (`lucide-react`) | Latest | SVG icon system |
+| AI SDK | Vercel AI SDK (`ai`, `@ai-sdk/openai`, `@ai-sdk/react`) | 6.x / 3.x | Streaming chat, embeddings, RAG |
 | Unit testing | Vitest | 2.0.x | Component tests |
 | E2E testing | Playwright | 1.46.x | Browser tests |
 | Runtime | React | 19.2.x | UI library |
@@ -35,7 +37,7 @@ For the Phase D dashboard design, see [docs/plans/2026-02-21-phase-d-dashboard-d
 
 | Layer | Technology | Status | Purpose |
 |-------|-----------|--------|---------|
-| AI | OpenAI GPT via Vercel AI SDK (`ai`, `openai`) | Pre-approved | Chatbot, workflow AI processing |
+| AI | OpenAI GPT via Vercel AI SDK (`ai`, `@ai-sdk/openai`, `@ai-sdk/react`) | **Installed (Phase E)** | Chatbot, streaming chat, embeddings, RAG |
 | Charts | Recharts (`recharts`) | Pre-approved | Analytics visualizations |
 | Forms | React Hook Form (`react-hook-form`, `@hookform/resolvers`) | **Installed (Phase C)** | Form handling |
 | Container | Docker + docker-compose | Deferred | Development environment (not needed for hosted Supabase + single Next.js app) |
@@ -63,22 +65,34 @@ src/
 │   │   │   └── page.tsx        # Signup form (email/password + name)
 │   │   └── callback/
 │   │       └── route.ts        # OAuth/email confirmation callback
+│   ├── api/
+│   │   ├── chat/route.ts               # Public streaming chat (no auth, IP rate-limited)
+│   │   └── knowledge/route.ts          # Protected KB CRUD (auth required)
 │   └── dashboard/
 │       ├── layout.tsx              # Dashboard shell (sidebar + top bar + auth gate)
 │       ├── page.tsx                # Overview (stats + quick actions)
-│       ├── chat/page.tsx           # Placeholder (Phase E)
+│       ├── chat/
+│       │   ├── page.tsx            # Chat management (server component)
+│       │   └── chat-tabs.tsx       # Conversations + KB tabs (client component)
 │       ├── workflows/page.tsx      # Placeholder (Phase F)
 │       ├── analytics/page.tsx      # Placeholder (Phase G)
 │       └── settings/
 │           ├── page.tsx            # Profile settings (server component)
 │           └── settings-form.tsx   # Settings form (client component)
 ├── components/
+│   ├── chat/
+│   │   ├── ChatWidget.tsx          # Floating chat widget (marketing page)
+│   │   ├── ChatBubble.tsx          # Message bubble + typing indicator
+│   │   └── ChatInput.tsx           # Chat text input with auto-resize
 │   ├── dashboard/
 │   │   ├── DashboardShell.tsx      # Layout orchestrator (sidebar + top bar + content)
 │   │   ├── DashboardSidebar.tsx    # Nav with layoutId active indicator
 │   │   ├── DashboardTopBar.tsx     # Hamburger + user info
 │   │   ├── MobileSidebarDrawer.tsx # Slide-out mobile sidebar
-│   │   └── StatCard.tsx            # Stat display card
+│   │   ├── StatCard.tsx            # Stat display card
+│   │   ├── ConversationList.tsx    # Conversation list viewer
+│   │   ├── ConversationDetail.tsx  # Message thread viewer
+│   │   └── KnowledgeBaseEditor.tsx # KB CRUD interface
 │   ├── forms/
 │   │   └── FormField.tsx       # Labeled input with RHF + error display
 │   ├── layout/
@@ -114,12 +128,22 @@ src/
 ├── lib/
 │   ├── motion.ts               # Motion presets and timing
 │   ├── utils.ts                # Utility functions (cn, clamp)
+│   ├── rate-limit.ts           # IP-based sliding-window rate limiter (in-memory)
 │   ├── supabase/
 │   │   ├── client.ts           # Browser client (anon key)
-│   │   └── server.ts           # Server client (cookie-based auth)
+│   │   ├── server.ts           # Server client (cookie-based auth)
+│   │   └── anon.ts             # Anonymous server client (no user session, for public API routes)
+│   ├── openai/
+│   │   └── client.ts           # OpenAI provider (@ai-sdk/openai)
+│   ├── chatbot/
+│   │   ├── knowledge.ts        # RAG retrieval (embed + pgvector search)
+│   │   ├── system-prompt.ts    # Dynamic system prompt builder
+│   │   └── seed.ts             # KB seed script from landing content
 │   └── validations/
 │       ├── auth.ts             # Zod schemas (login, signup, safeRedirect)
-│       └── settings.ts         # Zod schema (profile form)
+│       ├── settings.ts         # Zod schema (profile form)
+│       ├── chat.ts             # Zod schema (chat message input)
+│       └── knowledge.ts        # Zod schemas (KB create, update, delete)
 ├── middleware.ts                # Session refresh + route protection
 └── styles/
     └── globals.css             # Tailwind directives, CSS custom properties, orb-rings
@@ -204,7 +228,8 @@ supabase/
     ├── 005_create_bookings.sql         # Appointment bookings
     ├── 006_create_workflows.sql
     ├── 007_create_workflow_runs.sql
-    └── 008_create_analytics_events.sql
+    ├── 008_create_analytics_events.sql
+    └── 009_match_knowledge_base.sql  # pgvector similarity search RPC function
 ```
 
 ---
@@ -280,17 +305,19 @@ This type defines:
 
 ## Routing
 
-### Current (Phase D)
+### Current (Phase E)
 
-| Group/Segment | Path | Layout | Auth required |
-|---------------|------|--------|---------------|
-| `(marketing)` | `/` | TopNav + Footer | No |
-| `(auth)` | `/login`, `/signup`, `/callback` | Centered dark card, no nav | No (redirects to dashboard if already logged in) |
-| `dashboard/` | `/dashboard` | Sidebar + top bar (DashboardShell) | Yes (`getUser()` gate in layout + middleware redirect) |
-| `dashboard/` | `/dashboard/chat` | DashboardShell | Yes (placeholder — Phase E) |
-| `dashboard/` | `/dashboard/workflows` | DashboardShell | Yes (placeholder — Phase F) |
-| `dashboard/` | `/dashboard/analytics` | DashboardShell | Yes (placeholder — Phase G) |
-| `dashboard/` | `/dashboard/settings` | DashboardShell | Yes (profile form + account info) |
+| Group/Segment | Path | Method | Layout | Auth required |
+|---------------|------|--------|--------|---------------|
+| `(marketing)` | `/` | GET | TopNav + Footer + ChatWidget | No |
+| `(auth)` | `/login`, `/signup`, `/callback` | GET | Centered dark card, no nav | No (redirects to dashboard if already logged in) |
+| `api/` | `/api/chat` | POST | — | **No** (public, IP rate-limited, streaming) |
+| `api/` | `/api/knowledge` | GET/POST/PATCH/DELETE | — | Yes (`getUser()` gate) |
+| `dashboard/` | `/dashboard` | GET | Sidebar + top bar (DashboardShell) | Yes (`getUser()` gate in layout + middleware redirect) |
+| `dashboard/` | `/dashboard/chat` | GET | DashboardShell | Yes (conversations + KB management tabs) |
+| `dashboard/` | `/dashboard/workflows` | GET | DashboardShell | Yes (placeholder — Phase F) |
+| `dashboard/` | `/dashboard/analytics` | GET | DashboardShell | Yes (placeholder — Phase G) |
+| `dashboard/` | `/dashboard/settings` | GET | DashboardShell | Yes (profile form + account info) |
 
 **Note:** The dashboard uses `dashboard/` as an actual path segment, not a `(dashboard)` route group. This avoids a routing conflict where `(dashboard)/page.tsx` would resolve to `/` (same as `(marketing)/page.tsx`).
 
@@ -369,14 +396,14 @@ See [docs/plans/2026-02-14-ai-chatbot-website-design.md](docs/plans/2026-02-14-a
 
 ---
 
-## API Architecture (Planned)
+## API Architecture
 
 API routes follow two patterns — **public** (visitor-facing, no auth) and **protected** (dashboard, auth required):
 
 **Public routes (rate-limited by IP):**
 ```
 1. Validate input (Zod schema — reject with 400 if invalid)
-2. Rate limit by IP (token bucket)
+2. Rate limit by IP (sliding window)
 3. Execute business logic
 4. Return typed response (or stream for chat)
 ```
@@ -389,21 +416,21 @@ API routes follow two patterns — **public** (visitor-facing, no auth) and **pr
 4. Return typed response
 ```
 
-| Endpoint | Method | Auth | Rate limited | Description |
-|----------|--------|------|-------------|-------------|
-| `/api/chat` | POST | **No** (public) | Yes (IP-based) | Public chatbot — streams knowledge-base-powered response to visitors |
-| `/api/chat/admin` | GET/POST/PATCH | Yes | No | Chatbot configuration (system prompt, model, behavior) |
-| `/api/bookings` | GET/POST/PATCH/DELETE | POST: **No** (public), others: Yes | Yes (IP for public) | Appointment scheduling — visitors create, owners manage |
-| `/api/knowledge` | GET/POST/PATCH/DELETE | Yes | No | Knowledge base document CRUD |
-| `/api/workflows` | GET/POST/PATCH/DELETE | Yes | No | Workflow CRUD |
-| `/api/workflows/run` | POST | Yes | Yes | Execute workflow (idempotent) |
-| `/api/analytics` | GET | Yes | No | Query analytics events |
+| Endpoint | Method | Auth | Rate limited | Status | Description |
+|----------|--------|------|-------------|--------|-------------|
+| `/api/chat` | POST | **No** (public) | Yes (IP-based) | **Current** | Public chatbot — streams knowledge-base-powered response to visitors |
+| `/api/knowledge` | GET/POST/PATCH/DELETE | Yes | No | **Current** | Knowledge base document CRUD with embedding generation |
+| `/api/chat/admin` | GET/POST/PATCH | Yes | No | Planned | Chatbot configuration (system prompt, model, behavior) |
+| `/api/bookings` | GET/POST/PATCH/DELETE | POST: **No** (public), others: Yes | Yes (IP for public) | Planned | Appointment scheduling — visitors create, owners manage |
+| `/api/workflows` | GET/POST/PATCH/DELETE | Yes | No | Planned | Workflow CRUD |
+| `/api/workflows/run` | POST | Yes | Yes | Planned | Execute workflow (idempotent) |
+| `/api/analytics` | GET | Yes | No | Planned | Query analytics events |
 
 ---
 
-## Chatbot Architecture (Planned)
+## Chatbot Architecture (Core — Phase E | Full — Planned)
 
-The chatbot is kAyphI's core product — a public-facing AI assistant embedded on the marketing site as a floating widget. It requires **no login** from visitors.
+The chatbot is kAyphI's core product — a public-facing AI assistant embedded on the marketing site as a floating widget. It requires **no login** from visitors. The core infrastructure (streaming chat, RAG retrieval, system prompt builder, rate limiting, chat widget, knowledge base CRUD) is implemented in Phase E. Advanced features (voice mode, multilingual, image capabilities, action system, booking) are planned for later phases.
 
 ### How It Works
 
@@ -649,11 +676,16 @@ The same chatbot architecture is the product kAyphI offers to other businesses:
 - `tests/dashboard-stat-card.test.tsx` — StatCard renders label, value, and zero value
 - `tests/dashboard-sidebar.test.tsx` — sidebar nav items, hrefs, logout button (mocked motion/navigation/Supabase)
 - `tests/validations-settings.test.ts` — profile schema (name length, trim, avatar URL HTTPS-only)
+- `tests/rate-limit.test.ts` — sliding window rate limiter (allow, block, reset)
+- `tests/system-prompt.test.ts` — three-tier system prompt builder (KB context, domain rules, personality)
+- `tests/validations-chat.test.ts` — chat message input schema validation
+- `tests/validations-knowledge.test.ts` — KB create/update/delete schema validation
 
 **E2E test files:**
 - `tests/e2e/landing.spec.ts` — landing page smoke tests
 - `tests/e2e/auth.spec.ts` — auth page rendering, validation, navigation, redirect protection
 - `tests/e2e/dashboard.spec.ts` — dashboard auth redirect, placeholder page routing
+- `tests/e2e/chat-widget.spec.ts` — chat widget visibility, open/close, input rendering
 
 **Test setup:** `tests/setup.tsx` — Jest DOM matchers, IntersectionObserver/matchMedia mocks.
 **Path aliases:** Vitest resolves `@/*` → `src/*` via config.
