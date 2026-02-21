@@ -8,12 +8,13 @@ For visual design decisions, see [DESIGN.md](DESIGN.md).
 For the full product roadmap, see [docs/plans/2026-02-14-full-product-plan.md](docs/plans/2026-02-14-full-product-plan.md).
 For the Phase B infrastructure plan, see [docs/plans/2026-02-21-phase-b-implementation-plan.md](docs/plans/2026-02-21-phase-b-implementation-plan.md).
 For the Phase C auth design, see [docs/plans/2026-02-21-phase-c-auth-design.md](docs/plans/2026-02-21-phase-c-auth-design.md).
+For the Phase D dashboard design, see [docs/plans/2026-02-21-phase-d-dashboard-design.md](docs/plans/2026-02-21-phase-d-dashboard-design.md).
 
 ---
 
 ## Tech Stack
 
-### Current (Phase C)
+### Current (Phase D)
 
 | Layer | Technology | Version | Purpose |
 |-------|-----------|---------|---------|
@@ -63,10 +64,21 @@ src/
 │   │   └── callback/
 │   │       └── route.ts        # OAuth/email confirmation callback
 │   └── dashboard/
-│       ├── layout.tsx          # Protected layout (getUser() gate)
-│       ├── page.tsx            # Dashboard placeholder
-│       └── logout-button.tsx   # Client-side logout
+│       ├── layout.tsx              # Dashboard shell (sidebar + top bar + auth gate)
+│       ├── page.tsx                # Overview (stats + quick actions)
+│       ├── chat/page.tsx           # Placeholder (Phase E)
+│       ├── workflows/page.tsx      # Placeholder (Phase F)
+│       ├── analytics/page.tsx      # Placeholder (Phase G)
+│       └── settings/
+│           ├── page.tsx            # Profile settings (server component)
+│           └── settings-form.tsx   # Settings form (client component)
 ├── components/
+│   ├── dashboard/
+│   │   ├── DashboardShell.tsx      # Layout orchestrator (sidebar + top bar + content)
+│   │   ├── DashboardSidebar.tsx    # Nav with layoutId active indicator
+│   │   ├── DashboardTopBar.tsx     # Hamburger + user info
+│   │   ├── MobileSidebarDrawer.tsx # Slide-out mobile sidebar
+│   │   └── StatCard.tsx            # Stat display card
 │   ├── forms/
 │   │   └── FormField.tsx       # Labeled input with RHF + error display
 │   ├── layout/
@@ -106,7 +118,8 @@ src/
 │   │   ├── client.ts           # Browser client (anon key)
 │   │   └── server.ts           # Server client (cookie-based auth)
 │   └── validations/
-│       └── auth.ts             # Zod schemas (login, signup, safeRedirect)
+│       ├── auth.ts             # Zod schemas (login, signup, safeRedirect)
+│       └── settings.ts         # Zod schema (profile form)
 ├── middleware.ts                # Session refresh + route protection
 └── styles/
     └── globals.css             # Tailwind directives, CSS custom properties, orb-rings
@@ -267,18 +280,19 @@ This type defines:
 
 ## Routing
 
-### Current (Phase C)
+### Current (Phase D)
 
 | Group/Segment | Path | Layout | Auth required |
 |---------------|------|--------|---------------|
 | `(marketing)` | `/` | TopNav + Footer | No |
 | `(auth)` | `/login`, `/signup`, `/callback` | Centered dark card, no nav | No (redirects to dashboard if already logged in) |
-| `dashboard/` | `/dashboard` | Header + content area | Yes (`getUser()` gate in layout + middleware redirect) |
+| `dashboard/` | `/dashboard` | Sidebar + top bar (DashboardShell) | Yes (`getUser()` gate in layout + middleware redirect) |
+| `dashboard/` | `/dashboard/chat` | DashboardShell | Yes (placeholder — Phase E) |
+| `dashboard/` | `/dashboard/workflows` | DashboardShell | Yes (placeholder — Phase F) |
+| `dashboard/` | `/dashboard/analytics` | DashboardShell | Yes (placeholder — Phase G) |
+| `dashboard/` | `/dashboard/settings` | DashboardShell | Yes (profile form + account info) |
 
-**Note:** The dashboard uses `dashboard/` as an actual path segment, not a `(dashboard)` route group. This avoids a routing conflict where `(dashboard)/page.tsx` would resolve to `/` (same as `(marketing)/page.tsx`). Future dashboard sub-routes go under `dashboard/`: e.g., `dashboard/chat/page.tsx` → `/dashboard/chat`.
-
-### Planned
-Additional routes within `dashboard/` will be added in Phases D–G: `/dashboard/chat`, `/dashboard/workflows`, `/dashboard/analytics`, `/dashboard/settings`.
+**Note:** The dashboard uses `dashboard/` as an actual path segment, not a `(dashboard)` route group. This avoids a routing conflict where `(dashboard)/page.tsx` would resolve to `/` (same as `(marketing)/page.tsx`).
 
 ---
 
@@ -632,10 +646,14 @@ The same chatbot architecture is the product kAyphI offers to other businesses:
 - `tests/hero-media.test.tsx` — poster/video lazy-load, reduced motion, crossfade
 - `tests/validations-auth.test.ts` — Zod schemas (login, signup), safeRedirect helper
 - `tests/auth-forms.test.tsx` — login/signup form rendering, validation, submit flows (mocked Supabase)
+- `tests/dashboard-stat-card.test.tsx` — StatCard renders label, value, and zero value
+- `tests/dashboard-sidebar.test.tsx` — sidebar nav items, hrefs, logout button (mocked motion/navigation/Supabase)
+- `tests/validations-settings.test.ts` — profile schema (name length, trim, avatar URL HTTPS-only)
 
 **E2E test files:**
 - `tests/e2e/landing.spec.ts` — landing page smoke tests
 - `tests/e2e/auth.spec.ts` — auth page rendering, validation, navigation, redirect protection
+- `tests/e2e/dashboard.spec.ts` — dashboard auth redirect, placeholder page routing
 
 **Test setup:** `tests/setup.tsx` — Jest DOM matchers, IntersectionObserver/matchMedia mocks.
 **Path aliases:** Vitest resolves `@/*` → `src/*` via config.
