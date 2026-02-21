@@ -23,7 +23,7 @@ vi.mock("@/lib/supabase/client", () => ({
   }),
 }));
 
-import LoginPage from "@/app/(auth)/login/page";
+import { LoginForm } from "@/app/(auth)/login/login-form";
 import SignupPage from "@/app/(auth)/signup/page";
 
 beforeEach(() => {
@@ -32,7 +32,7 @@ beforeEach(() => {
 
 describe("LoginPage", () => {
   test("renders email and password fields", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
@@ -41,7 +41,7 @@ describe("LoginPage", () => {
 
   test("shows validation errors for empty submit", async () => {
     const user = userEvent.setup();
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
@@ -56,7 +56,7 @@ describe("LoginPage", () => {
     });
 
     const user = userEvent.setup();
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     await user.type(screen.getByLabelText("Email"), "user@example.com");
     await user.type(screen.getByLabelText("Password"), "wrongpassword");
@@ -71,7 +71,7 @@ describe("LoginPage", () => {
     mockSignIn.mockResolvedValueOnce({ error: null });
 
     const user = userEvent.setup();
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     await user.type(screen.getByLabelText("Email"), "user@example.com");
     await user.type(screen.getByLabelText("Password"), "password123");
@@ -83,7 +83,7 @@ describe("LoginPage", () => {
   });
 
   test("has link to signup page", () => {
-    render(<LoginPage />);
+    render(<LoginForm />);
 
     const signupLink = screen.getByRole("link", { name: "Sign up" });
     expect(signupLink).toHaveAttribute("href", "/signup");
