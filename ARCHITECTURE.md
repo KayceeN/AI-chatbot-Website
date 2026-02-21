@@ -433,7 +433,7 @@ The chatbot can perform actions beyond answering questions. Actions are register
 **MVP actions:**
 | Action | Trigger | Effect |
 |--------|---------|--------|
-| `book_appointment` | Visitor asks to schedule a call/demo | Surface inline calendar, create booking |
+| `book_appointment` | Visitor asks to schedule a call/demo | Surface inline calendar, create booking, trigger confirmation email workflow |
 | `collect_contact` | Visitor wants to be contacted | Capture name + email, store as lead |
 | `capture_info` | Visitor shares business needs, preferences, or feedback | Store structured data for the business to review/act on later |
 | `navigate` | Visitor asks about a section | Scroll to the relevant section on the page |

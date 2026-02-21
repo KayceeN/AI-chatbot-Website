@@ -362,7 +362,7 @@ Each chatbot deployment has a **configurable personality** that governs all comm
 
 | Action | Trigger | Effect |
 |--------|---------|--------|
-| `book_appointment` | Visitor asks to schedule a call/demo | Surface inline BookingCalendar, create booking via `/api/bookings` |
+| `book_appointment` | Visitor asks to schedule a call/demo | Surface inline BookingCalendar, create booking via `/api/bookings`, trigger confirmation email workflow |
 | `collect_contact` | Visitor wants to be contacted | Capture name + email, store as lead |
 | `capture_info` | Visitor shares business needs, preferences, or feedback | Store structured data for the business to review/act on later |
 | `navigate_section` | Visitor asks about a section/feature | Return section anchor for client-side scroll |
@@ -411,6 +411,14 @@ Captured data is stored as structured `analytics_events` (event_type: `chat.lead
 | created_at | timestamptz | |
 
 RLS: public INSERT, owner SELECT/UPDATE/DELETE.
+
+**Confirmation email workflow:**
+When a booking is created via the chatbot's `book_appointment` action, an automated email workflow is triggered:
+1. **Visitor confirmation** — email sent to `visitor_email` confirming the appointment (date, time, business name, any instructions)
+2. **Business notification** — email sent to the business owner alerting them of the new booking
+3. **Reminder** (optional) — scheduled reminder email to visitor before the appointment (e.g., 24 hours prior)
+
+Implementation: The booking API route triggers the email workflow after successful INSERT. For MVP, use a transactional email service (Resend, SendGrid, or Supabase Edge Functions). Email templates are configurable per business in the dashboard.
 
 ### E.7: Chat Widget UI (Public — Marketing Site)
 
