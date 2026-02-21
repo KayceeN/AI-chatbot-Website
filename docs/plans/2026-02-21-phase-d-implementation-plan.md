@@ -8,6 +8,10 @@
 
 **Tech Stack:** Next.js 15 (App Router), Supabase (server client), React Hook Form + Zod, shadcn/ui (Button, Input, Label), Motion (layoutId), Lucide React, GlassCard
 
+**Codex Review:** Reviewed 2026-02-21. 1 CRITICAL (stats query scoping) addressed with explicit user_id filters. 1 HIGH (avatar URL scheme) addressed with https-only validation. 1 HIGH (server-side settings writes) dismissed — RLS is the security boundary per ARCHITECTURE.md invariant #2. 1 HIGH (E2E coverage) dismissed — authenticated E2E requires test user infrastructure. 2 MEDIUM (test coverage, error handling) partially addressed. 1 MEDIUM (client mutation inconsistency) noted.
+
+**Note:** Profile updates use client-side Supabase calls (not server actions). This is intentional — the Supabase browser client uses the authenticated session cookie, and RLS policies enforce `auth.uid() = id` on the profiles table. This is the standard Supabase pattern for mutations from client components.
+
 ---
 
 ### Task 1: Create StatCard Component
@@ -540,25 +544,31 @@ export default async function DashboardPage() {
 
   const fullName = user.user_metadata?.full_name ?? "User";
 
-  // Fetch stats (all return 0 gracefully when tables are empty)
+  // Fetch stats — explicit user_id filter as belt-and-suspenders with RLS.
+  // Errors are treated as 0 (empty state) since tables may have no data yet.
+  const userId = user.id;
   const [conversations, knowledgeBase, workflows, bookings] = await Promise.all(
     [
       supabase
         .from("conversations")
         .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
         .then((r) => r.count ?? 0),
       supabase
         .from("knowledge_base")
         .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
         .then((r) => r.count ?? 0),
       supabase
         .from("workflows")
         .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
         .eq("is_active", true)
         .then((r) => r.count ?? 0),
       supabase
         .from("bookings")
         .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
         .gte("date", new Date().toISOString().split("T")[0])
         .then((r) => r.count ?? 0),
     ]
@@ -675,12 +685,20 @@ describe("profileSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  test("accepts valid URL for avatar", () => {
+  test("accepts valid HTTPS URL for avatar", () => {
     const result = profileSchema.safeParse({
       fullName: "Jane Doe",
       avatarUrl: "https://example.com/avatar.png",
     });
     expect(result.success).toBe(true);
+  });
+
+  test("rejects non-HTTPS URL for avatar", () => {
+    const result = profileSchema.safeParse({
+      fullName: "Jane Doe",
+      avatarUrl: "http://example.com/avatar.png",
+    });
+    expect(result.success).toBe(false);
   });
 
   test("rejects short name", () => {
@@ -741,6 +759,7 @@ export const profileSchema = z.object({
   avatarUrl: z
     .string()
     .url("Invalid URL")
+    .refine((url) => url.startsWith("https://"), "URL must use HTTPS")
     .or(z.literal(""))
     .default(""),
 });
@@ -751,7 +770,7 @@ export type ProfileValues = z.infer<typeof profileSchema>;
 **Step 4: Run tests to verify they pass**
 
 Run: `npm run test -- tests/validations-settings.test.ts`
-Expected: All 6 tests PASS
+Expected: All 7 tests PASS
 
 **Step 5: Commit**
 
