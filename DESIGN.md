@@ -91,12 +91,12 @@ All reusable primitives live in `src/components/ui/`:
 | `ActionButton` | `ActionButton.tsx` | CTA button with ArrowUpRight icon: primary (black bg) or secondary (panel bg), both with shadow + hover translate |
 | `SectionShell` | `SectionShell.tsx` | Section wrapper: max-w-6xl, horizontal padding, vertical padding |
 | `SectionHeading` | `SectionHeading.tsx` | Badge + h2 + subtitle, center or left aligned |
-| `Reveal` | `Reveal.tsx` | Scroll-triggered animation wrapper using Framer Motion `whileInView` |
+| `Reveal` | `Reveal.tsx` | Scroll-triggered animation wrapper using Motion `whileInView` |
 | `LogoMark` | `LogoMark.tsx` | Brand logo component |
 
 ### Motion System
 
-Defined in `src/lib/motion.ts`. Uses Framer Motion.
+Defined in `src/lib/motion.ts`. Currently uses Framer Motion 11.3.x (migrating to Motion 12.x in Phase B for React 19 compatibility — imports change from `"framer-motion"` to `"motion/react"`).
 
 **Presets (`MotionPreset` type):**
 
