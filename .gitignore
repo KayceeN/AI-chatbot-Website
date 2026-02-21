@@ -20,3 +20,6 @@ build
 
 # reference assets (large binaries)
 reference/
+
+# git worktrees
+.worktrees/
