@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
 // Mock motion/react to avoid animation complexity in tests
 vi.mock("motion/react", () => ({
   motion: {
-    div: ({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+    div: ({ children, className, layoutId, ...props }: React.HTMLAttributes<HTMLDivElement> & { layoutId?: string }) => (
       <div className={className} {...props}>
         {children}
       </div>
