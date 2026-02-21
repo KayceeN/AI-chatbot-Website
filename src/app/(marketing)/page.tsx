@@ -1,3 +1,4 @@
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { TopNav } from "@/components/layout/TopNav";
 import { BenefitsSection } from "@/components/sections/BenefitsSection";
 import { ComparisonSection } from "@/components/sections/ComparisonSection";
@@ -16,21 +17,24 @@ import { landingContent } from "@/content/landing";
 
 export default function HomePage() {
   return (
-    <main className="relative overflow-x-clip">
-      <TopNav nav={landingContent.nav} />
-      <HeroSection content={landingContent.hero} />
-      <BenefitsSection content={landingContent.benefits} />
-      <FeaturesSection content={landingContent.features} />
-      <ServicesSection content={landingContent.services} />
-      <ProcessSection content={landingContent.process} />
-      <ProjectsSection content={landingContent.projects} />
-      <CustomersSection content={landingContent.customers} />
-      <PricingSection content={landingContent.pricing} />
-      <ComparisonSection content={landingContent.comparison} />
-      <TeamSection content={landingContent.team} />
-      <ContactSection content={landingContent.contact} />
-      <FAQSection content={landingContent.faq} />
-      <FooterSection content={landingContent.footer} />
-    </main>
+    <>
+      <main className="relative overflow-x-clip">
+        <TopNav nav={landingContent.nav} />
+        <HeroSection content={landingContent.hero} />
+        <BenefitsSection content={landingContent.benefits} />
+        <FeaturesSection content={landingContent.features} />
+        <ServicesSection content={landingContent.services} />
+        <ProcessSection content={landingContent.process} />
+        <ProjectsSection content={landingContent.projects} />
+        <CustomersSection content={landingContent.customers} />
+        <PricingSection content={landingContent.pricing} />
+        <ComparisonSection content={landingContent.comparison} />
+        <TeamSection content={landingContent.team} />
+        <ContactSection content={landingContent.contact} />
+        <FAQSection content={landingContent.faq} />
+        <FooterSection content={landingContent.footer} />
+      </main>
+      <ChatWidget />
+    </>
   );
 }
