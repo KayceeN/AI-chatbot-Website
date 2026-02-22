@@ -206,7 +206,7 @@ Research and define pricing strategy for kAyphI's chatbot product and all add-on
 
 ---
 
-## Phase B: Infrastructure Setup (Complete — PR pending)
+## Phase B: Infrastructure Setup (Complete — PR #11)
 **Design:** `docs/plans/2026-02-21-phase-b-infrastructure-design.md`
 **Implementation plan:** `docs/plans/2026-02-21-phase-b-implementation-plan.md` (27 tasks, Codex-reviewed)
 - [x] Upgrade Next.js 14 → 15 + React 18 → 19
@@ -220,39 +220,62 @@ Research and define pricing strategy for kAyphI's chatbot product and all add-on
 - [x] Route group restructure: `(marketing)`, `(auth)`, `(dashboard)`
 - ~~[ ] Add Dockerfile and docker-compose.yml~~ (deferred — no value for hosted Supabase + single Next.js app)
 
-## Phase C: Auth System
-- [ ] Supabase Auth integration (email/password + Google OAuth)
-- [ ] Auth pages (`src/app/(auth)/login/page.tsx`, `signup/page.tsx`, `callback/route.ts`)
-- [ ] Profile auto-creation trigger (Supabase DB trigger on auth.users insert)
-- [ ] Auth middleware (`src/middleware.ts`) — validate session, redirect, refresh tokens
-- [ ] Per-route auth verification (each API route independently verifies via `getUser()`)
+## Phase C: Auth System (Complete — PR #12)
+**Design:** `docs/plans/2026-02-21-phase-c-auth-design.md`
+**Implementation plan:** `docs/plans/2026-02-21-phase-c-implementation-plan.md`
+- [x] Supabase Auth integration (email/password)
+- [x] Auth pages (`src/app/(auth)/login/page.tsx`, `signup/page.tsx`, `callback/route.ts`)
+- [x] shadcn/ui components installed (Button, Input, Label)
+- [x] FormField component with React Hook Form + Zod validation
+- [x] Auth middleware (`src/middleware.ts`) — session refresh, redirect, route protection
+- [x] Dashboard layout auth gate (`getUser()` in layout.tsx)
+- [x] Safe redirect validation (`safeRedirect()` in auth validations)
+- [x] Unit tests (auth forms, validations) + E2E tests (auth pages, redirects)
 
-## Phase D: Dashboard Shell
-- [ ] Dashboard layout (`src/app/(dashboard)/layout.tsx` with sidebar nav)
-- [ ] Route group `(dashboard)` with shared layout
-- [ ] Dashboard overview page (stats summary cards)
-- [ ] Settings page (profile update form with RHF + Zod validation)
-- [ ] Responsive sidebar (collapsible on mobile)
+## Phase D: Dashboard Shell (Complete — PR #13)
+**Design:** `docs/plans/2026-02-21-phase-d-dashboard-design.md`
+**Implementation plan:** `docs/plans/2026-02-21-phase-d-implementation-plan.md`
+- [x] Dashboard layout (`src/app/dashboard/layout.tsx` with DashboardShell)
+- [x] Dashboard sidebar with layoutId active indicator
+- [x] Mobile sidebar drawer (hamburger + slide-out)
+- [x] Dashboard top bar (hamburger + user info)
+- [x] Dashboard overview page (stats summary cards with StatCard component)
+- [x] Settings page (profile form with RHF + Zod + Supabase update)
+- [x] Placeholder pages for workflows and analytics
+- [x] Unit tests (StatCard, sidebar) + E2E tests (auth redirect, routing)
 
-## Phase E: AI Chatbot (Public-Facing Widget + Knowledge Base + Voice + Multilingual)
-- [ ] OpenAI client (`src/lib/openai/client.ts`)
-- [ ] Knowledge base infrastructure — `knowledge_base` table with pgvector embeddings, RAG retrieval
-- [ ] Default kAyphI knowledge base seed data (`src/content/knowledge-base.ts`)
-- [ ] System prompt builder — dynamic prompt from business identity + personality + retrieved context + available actions
-- [ ] Chatbot personality system — configurable tone, formality, name/persona, greeting, emoji, verbosity; presets (Professional, Friendly, Casual, Clinical) + custom
-- [ ] `/api/chat/route.ts` — **public** (no auth), IP rate limiting, RAG retrieval, streaming, action detection
-- [ ] `/api/chat/admin/route.ts` — chatbot config management (auth required)
-- [ ] Action system — page-aware + extensible: universal actions (`book_appointment`, `collect_contact`, `capture_info`, `navigate`) + page-specific actions via widget JS API (`setPageContext`)
-- [ ] Widget JavaScript API — `window.kayphiChat.setPageContext()` for host sites to register page type, page data, and available actions per page
-- [ ] Information capture — auto-extract leads, intent signals, questions, feedback from conversations for business review
-- [ ] Booking system — `/api/bookings/route.ts` (public POST, auth for management), `bookings` table
-- [ ] Chat widget UI — `ChatWidget`, `ChatBubble`, `ChatInput`, `BookingCalendar`, `QuickReplyChip`
-- [ ] Voice mode — `VoiceButton` (STT via Web Speech API / Whisper), `AudioPlayer` (TTS via OpenAI TTS API), configurable voice
-- [ ] Multilingual support — auto-detect visitor language, respond in kind, optional language selector
-- [ ] Image support — stored KB images (no cost), visitor photo understanding (vision, included), DALL-E generation (optional, budget-capped)
-- [ ] Dashboard chat management — conversation viewer, knowledge base editor (text + images), chatbot config (domain, voice, language, image generation toggle + budget), preview panel
-- [ ] Message persistence (role, content, tokens_used, language)
-- [ ] Analytics events for chatbot interactions
+## Phase E: Core Chatbot (Complete — PR #14)
+**Design:** `docs/plans/2026-02-21-phase-e-chatbot-design.md`
+**Implementation plan:** `docs/plans/2026-02-21-phase-e-implementation-plan.md` (21 tasks)
+**Note:** Plan specified ai@^4.0.0 but zod v4 incompatibility forced ai@6.x — all code adapted to v6 API.
+- [x] Install AI SDK deps (`ai@6.x`, `@ai-sdk/openai@3.x`, `@ai-sdk/react@3.x`)
+- [x] OpenAI client (`src/lib/openai/client.ts`)
+- [x] Token bucket rate limiter (`src/lib/rate-limit.ts`)
+- [x] Anonymous Supabase client for public API routes (`src/lib/supabase/anon.ts`)
+- [x] Zod schemas — chat request + knowledge base CRUD (`src/lib/validations/chat.ts`, `knowledge.ts`)
+- [x] pgvector similarity search RPC (`supabase/migrations/009_match_knowledge_base.sql`)
+- [x] System prompt builder with three-tier rules (`src/lib/chatbot/system-prompt.ts`)
+- [x] RAG retrieval — embed + pgvector search (`src/lib/chatbot/knowledge.ts`)
+- [x] KB seed script from landing content (`src/lib/chatbot/seed.ts`)
+- [x] Public streaming chat API — rate limit → validate → RAG → stream → persist (`src/app/api/chat/route.ts`)
+- [x] Protected knowledge base CRUD API (`src/app/api/knowledge/route.ts`)
+- [x] Chat widget components — ChatWidget, ChatBubble, ChatInput (`src/components/chat/`)
+- [x] ChatWidget on marketing page with streaming via DefaultChatTransport
+- [x] Dashboard chat page — conversations + KB management tabs
+- [x] ConversationList, ConversationDetail, KnowledgeBaseEditor components
+- [x] Unit tests (rate-limit, system-prompt, chat/knowledge validations) — 64 tests pass
+- [x] E2E tests (chat widget visibility, open/close)
+- [x] ARCHITECTURE.md updated
+
+### Phase E — Deferred Features (Future Phases)
+- [ ] Chatbot personality config panel (tone, formality, name, greeting, emoji, verbosity)
+- [ ] `/api/chat/admin/route.ts` — chatbot config management
+- [ ] Action system (booking, contact, navigate, page-aware actions)
+- [ ] Widget JavaScript API (`window.kayphiChat.setPageContext()`)
+- [ ] Information capture (leads, intent signals, feedback)
+- [ ] Voice mode (STT + TTS)
+- [ ] Multilingual support
+- [ ] Image capabilities (stored KB images, vision, DALL-E generation)
 
 ## Phase F: Workflow Automation
 - [ ] Workflow builder UI (form-based with RHF + Zod validation)

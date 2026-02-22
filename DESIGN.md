@@ -9,7 +9,7 @@ For the full gap analysis, see [docs/plans/2026-02-14-visual-audit.md](docs/plan
 
 ## Current State
 
-Everything below describes the actual Codex build as of 2026-02-14.
+Everything below describes the implemented build as of Phase E (2026-02-21).
 
 ### Brand
 
@@ -172,6 +172,24 @@ CSS pseudo-elements in `src/styles/globals.css`:
 - Mobile overlay reduced from heavy white gradient (0.97 opacity) to subtle (matching desktop)
 - `viewport-fit: cover` enabled in root layout for safe area inset support
 - Desktop layout retains title, badge, and CTA positioning from Phase A
+
+### Chat Widget (Phase E)
+
+The floating chat widget appears on the marketing page only (`bottom-6 right-6 z-50`).
+
+| Component | Styling |
+|-----------|---------|
+| `ChatWidget` | Floating circle button → expandable panel (400×500px desktop, full-width mobile). Panel: `bg-panel/90 backdrop-blur border border-white/75 rounded-panel shadow-plate` |
+| `ChatBubble` | User: right-aligned `bg-ink text-white rounded-2xl`. Assistant: left-aligned `bg-white/80 text-ink rounded-2xl` with kAyphI logo mark. Typing indicator: three animated bouncing dots |
+| `ChatInput` | Auto-resize textarea, `bg-white/80 border border-white/75 rounded-xl`. Send button with `SendHorizonal` icon, disabled while streaming |
+
+### Auth Pages (Phase C)
+
+Centered card layout on dark background (`bg-ink`), no nav/footer. Forms use `FormField` component with React Hook Form + Zod validation. Error messages displayed inline below fields.
+
+### Dashboard Shell (Phase D)
+
+Sidebar navigation with `layoutId` active indicator (consistent with pricing toggle pattern). Responsive: full sidebar on `lg+`, hamburger + slide-out drawer on mobile. Top bar shows user name + email.
 
 ### Remaining Gaps
 

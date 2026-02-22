@@ -676,7 +676,7 @@ The same chatbot architecture is the product kAyphI offers to other businesses:
 - `tests/dashboard-stat-card.test.tsx` — StatCard renders label, value, and zero value
 - `tests/dashboard-sidebar.test.tsx` — sidebar nav items, hrefs, logout button (mocked motion/navigation/Supabase)
 - `tests/validations-settings.test.ts` — profile schema (name length, trim, avatar URL HTTPS-only)
-- `tests/rate-limit.test.ts` — sliding window rate limiter (allow, block, reset)
+- `tests/rate-limit.test.ts` — token bucket rate limiter (allow, block, refill, per-IP isolation)
 - `tests/system-prompt.test.ts` — three-tier system prompt builder (KB context, domain rules, personality)
 - `tests/validations-chat.test.ts` — chat message input schema validation
 - `tests/validations-knowledge.test.ts` — KB create/update/delete schema validation
@@ -744,10 +744,13 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # OpenAI (required for Phase E)
 OPENAI_API_KEY=your-openai-key
+
+# Business owner (required for Phase E — single-tenant conversation ownership)
+KAYPHI_OWNER_USER_ID=your-owner-supabase-user-id
 ```
 
 `NEXT_PUBLIC_` prefixed variables are exposed to the browser.
-`SUPABASE_SERVICE_ROLE_KEY` and `OPENAI_API_KEY` are server-only — never sent to the client.
+`SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, and `KAYPHI_OWNER_USER_ID` are server-only — never sent to the client.
 
 ---
 
