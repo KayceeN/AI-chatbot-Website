@@ -51,3 +51,11 @@ The original Phase E described all chatbot features behind authentication. The a
 
 ### Update brand name across ALL files when rebranding, not just user-facing content
 Changing the brand name in `landing.ts` but leaving "OrbAI" in ARCHITECTURE.md, DESIGN.md, package.json, and package-lock.json created a misleading divergence. When rebranding, use project-wide search to find all references.
+
+## 2026-02-21: Phase E — Core Chatbot
+
+### Check peer dependency compatibility before pinning SDK versions
+The implementation plan specified `ai@^4.0.0` (Vercel AI SDK v4) because v5+ had breaking changes. However, ai v4 has a peer dependency on `zod@^3.23.8`, which conflicts with the project's `zod@4.3.6`. The actual install defaulted to `ai@6.x` which supports zod v4. Always check `npm info <package> peerDependencies` before pinning a version in a plan, especially when the project uses newer major versions of transitive dependencies.
+
+### Vercel AI SDK v6 has significant breaking changes from v4 — verify the API surface before coding
+Key v6 changes that caused implementation churn: `useChat` moved from `ai/react` to `@ai-sdk/react` (separate package), `toDataStreamResponse()` → `toUIMessageStreamResponse()`, `msg.content` (string) → `msg.parts` (array of typed parts), `usage.completionTokens` → `usage.outputTokens`, `handleSubmit`/`input` removed from `useChat` (use `sendMessage({text})` + local state), `isLoading` → `status === "submitted" || status === "streaming"`, `DefaultChatTransport` replaces direct `api` option, `convertToModelMessages()` needed to convert UIMessages for `streamText`. When adapting a plan written for an older SDK version, read the actual type definitions before dispatching implementers.
